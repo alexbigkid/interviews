@@ -1,0 +1,81 @@
+{
+    "ingredients": [
+        {
+            "name": "chicken drumsticks and thighs",
+            "image": "chicken-parts.jpg",
+            "price": 254.32,
+            "amount": {
+                "metric": {
+                    "value": 6.0,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 6.0,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "garlic cloves",
+            "image": "garlic.png",
+            "price": 26.67,
+            "amount": {
+                "metric": {
+                    "value": 4.0,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 4.0,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "ginger root",
+            "image": "ginger.png",
+            "price": 15.49,
+            "amount": {
+                "metric": {
+                    "value": 4.0,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 4.0,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "kosher salt",
+            "image": "salt.jpg",
+            "price": 3.86,
+            "amount": {
+                "metric": {
+                    "value": 2.0,
+                    "unit": "Tbsps"
+                },
+                "us": {
+                    "value": 2.0,
+                    "unit": "Tbsps"
+                }
+            }
+        },
+        {
+            "name": "pineapple",
+            "image": "pineapple.jpg",
+            "price": 74.93,
+            "amount": {
+                "metric": {
+                    "value": 226.796,
+                    "unit": "g"
+                },
+                "us": {
+                    "value": 8.0,
+                    "unit": "ounces"
+                }
+            }
+        }
+    ],
+    "totalCost": 375.27,
+    "totalCostPerServing": 62.54
+}

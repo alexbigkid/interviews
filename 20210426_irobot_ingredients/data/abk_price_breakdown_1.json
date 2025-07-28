@@ -1,0 +1,201 @@
+{
+    "ingredients": [
+        {
+            "name": "pitas",
+            "image": "pita-bread.jpg",
+            "price": 100.0,
+            "amount": {
+                "metric": {
+                    "value": 2.0,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 2.0,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "cooked bacon",
+            "image": "cooked-bacon.jpg",
+            "price": 41.14,
+            "amount": {
+                "metric": {
+                    "value": 4.0,
+                    "unit": "slice"
+                },
+                "us": {
+                    "value": 4.0,
+                    "unit": "slice"
+                }
+            }
+        },
+        {
+            "name": "granny smith apple",
+            "image": "grannysmith-apple.png",
+            "price": 80.48,
+            "amount": {
+                "metric": {
+                    "value": 1.0,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 1.0,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "red onion",
+            "image": "red-onion.png",
+            "price": 18.33,
+            "amount": {
+                "metric": {
+                    "value": 0.5,
+                    "unit": ""
+                },
+                "us": {
+                    "value": 0.5,
+                    "unit": ""
+                }
+            }
+        },
+        {
+            "name": "garlic",
+            "image": "garlic.png",
+            "price": 26.67,
+            "amount": {
+                "metric": {
+                    "value": 4.0,
+                    "unit": "cloves"
+                },
+                "us": {
+                    "value": 4.0,
+                    "unit": "cloves"
+                }
+            }
+        },
+        {
+            "name": "shredded cheddar cheese",
+            "image": "shredded-cheddar.jpg",
+            "price": 90.8,
+            "amount": {
+                "metric": {
+                    "value": 84.75,
+                    "unit": "g"
+                },
+                "us": {
+                    "value": 0.75,
+                    "unit": "cup"
+                }
+            }
+        },
+        {
+            "name": "demerara sugar",
+            "image": "raw-brown-sugar.png",
+            "price": 17.86,
+            "amount": {
+                "metric": {
+                    "value": 50.0,
+                    "unit": "g"
+                },
+                "us": {
+                    "value": 0.25,
+                    "unit": "cup"
+                }
+            }
+        },
+        {
+            "name": "cinnamon",
+            "image": "cinnamon.jpg",
+            "price": 4.07,
+            "amount": {
+                "metric": {
+                    "value": 0.5,
+                    "unit": "tsps"
+                },
+                "us": {
+                    "value": 0.5,
+                    "unit": "tsps"
+                }
+            }
+        },
+        {
+            "name": "ground ginger",
+            "image": "ginger.png",
+            "price": 6.05,
+            "amount": {
+                "metric": {
+                    "value": 0.25,
+                    "unit": "tsps"
+                },
+                "us": {
+                    "value": 0.25,
+                    "unit": "tsps"
+                }
+            }
+        },
+        {
+            "name": "cloves",
+            "image": "cloves.jpg",
+            "price": 24.82,
+            "amount": {
+                "metric": {
+                    "value": 1.0,
+                    "unit": "cloves"
+                },
+                "us": {
+                    "value": 1.0,
+                    "unit": "cloves"
+                }
+            }
+        },
+        {
+            "name": "chili flakes",
+            "image": "red-pepper-flakes.jpg",
+            "price": 7.77,
+            "amount": {
+                "metric": {
+                    "value": 0.75,
+                    "unit": "tsps"
+                },
+                "us": {
+                    "value": 0.75,
+                    "unit": "tsps"
+                }
+            }
+        },
+        {
+            "name": "olive oil",
+            "image": "olive-oil.jpg",
+            "price": 33.35,
+            "amount": {
+                "metric": {
+                    "value": 2.0,
+                    "unit": "Tbsps"
+                },
+                "us": {
+                    "value": 2.0,
+                    "unit": "Tbsps"
+                }
+            }
+        },
+        {
+            "name": "butter",
+            "image": "butter-sliced.jpg",
+            "price": 12.0,
+            "amount": {
+                "metric": {
+                    "value": 1.0,
+                    "unit": "Tbsp"
+                },
+                "us": {
+                    "value": 1.0,
+                    "unit": "Tbsp"
+                }
+            }
+        }
+    ],
+    "totalCost": 463.36,
+    "totalCostPerServing": 231.68
+}

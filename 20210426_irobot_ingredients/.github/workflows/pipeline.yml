@@ -1,0 +1,50 @@
+name: IngredientsForCooking
+
+on:
+    push:
+        branches:
+            - main
+
+env:
+    ENV: prod
+    SPOONACULAR_API_KEY: ${{ secrets.SPOONACULAR_API_KEY }}
+
+jobs:
+    Deploy:
+        name: Run on ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                # os: [ubuntu-latest]
+                os: [ ubuntu, macOS, windows ]
+                py: [ "3.11", "3.12", "3.13" ]
+
+        steps:
+            - name: checkout repo
+              uses: actions/checkout@v2
+            - name: setup python ${{ matrix.py }}
+              uses: actions/setup-python@v2
+              with:
+                python-version: ${{ matrix.py }}
+            - name: Python Info
+              run: |
+                echo ""
+                echo "------------------------"
+                echo "Python version"
+                echo "------------------------"
+                python --version
+                echo ""
+                echo "------------------------"
+                echo "Python3 version"
+                echo "------------------------"
+                python3 --version
+            - name: install dependencies
+              run: make install_test
+            - name: install tox-gh
+              run: python -m pip install tox-gh
+            - name: run unit tests
+              run: make test_vff
+            # coverage has a problem with windows so not running it if windows OS
+            - name: run coverage
+              if: "!contains(matrix.os, 'windows')"
+              run: make coverage
