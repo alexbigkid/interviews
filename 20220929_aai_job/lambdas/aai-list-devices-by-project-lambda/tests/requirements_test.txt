@@ -1,0 +1,6 @@
+# Install normal dependencies
+-r ../aai-list-devices-by-project/requirements.txt
+
+# Install test dependencies
+parameterized
+coverage

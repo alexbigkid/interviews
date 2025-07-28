@@ -1,0 +1,7 @@
+# Install test dependencies
+-r requirements_test.txt
+
+# Install dev dependencies
+pip-check
+pip-date
+pip-chill

@@ -1,0 +1,77 @@
+name: aai_job
+
+on:
+    push:
+        branches:
+            - main
+
+env:
+    ENV: dev
+    REGION: us-west-1
+
+jobs:
+    Deploy:
+        name: Deploy AAI AWS infrastructure
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                shell: bash
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            # terraform setup
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v1
+              with:
+                  cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+            - name: Check Terraform
+              run: |
+                echo ""
+                echo "------------------------"
+                echo "Terraform version"
+                echo "------------------------"
+                terraform --version
+
+            # python 3.9 setup / the latest python supported by AWS
+            - name: Setup python 3.9
+              uses: actions/setup-python@v2
+              with:
+                python-version: "3.9"
+            - name: Check python
+              run: |
+                echo ""
+                echo "------------------------"
+                echo "Python version"
+                echo "------------------------"
+                python --version
+
+            # setup other required tools
+            - name: Setup Other tools
+              run: ./InstallTools.sh
+              shell: bash
+
+            # deploys Terraform first, unit tests lambdas and deploys them
+            - name: Deploy
+              run: ./Deploy.sh
+              shell: bash
+              env:
+                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+                AWS_DEFAULT_REGION: ${{ env.REGION }}
+                TF_VAR_user: ${{ secrets.POSTGRE_DB_USERNAME }}
+                TF_VAR_pswd: ${{ secrets.POSTGRE_DB_PASSWORD }}
+                TF_VAR_env: ${{ env.ENV }}
+                TF_INPUT: false
+                TF_IN_AUTOMATION: true
+
+            # run integration tests
+            # - name: Integration tests
+            #   run: ./runIntegrationTests.sh
+            #   shell: bash
+            #   env:
+            #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            #     AWS_DEFAULT_REGION: ${{ env.REGION }}

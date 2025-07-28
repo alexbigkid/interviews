@@ -1,0 +1,33 @@
+service: aai-list-devices-by-project
+frameworkVersion: "3"
+
+# plugins:
+#     - serverless-deployment-bucket
+
+provider:
+    name: aws
+    runtime: python3.9
+    stage: ${opt:stage, 'dev'}
+    region: ${opt:region, 'us-west-1'}
+    stackName: ${self:service}-${self:provider.stage}
+    deploymentBucket:
+        name: ${self:service}-${self:provider.stage}
+        serverSideEncryption: AES256
+
+package:
+    individually: true
+    patterns:
+        - '!tests/**'
+        - '!node_modules/**'
+        - '!*'
+
+functions:
+    lambda_handler:
+        handler: handler.lambda_handler
+        package:
+            patterns:
+                - "handler.py"
+        events:
+            - http:
+                  path: hello
+                  method: get
