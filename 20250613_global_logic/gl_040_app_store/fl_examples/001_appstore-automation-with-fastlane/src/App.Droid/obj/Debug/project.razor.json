@@ -1,0 +1,14 @@
+{
+  "ProjectFilePath": "/Users/abk/dev/git/appstore-automation-with-fastlane/src/App.Droid/App.Droid.csproj",
+  "TargetFramework": "v9.0",
+  "TagHelpers": [],
+  "Configuration": {
+    "ConfigurationName": "UnsupportedRazor",
+    "LanguageVersion": "1.0",
+    "Extensions": [
+      {
+        "ExtensionName": "UnsupportedRazorExtension"
+      }
+    ]
+  }
+}

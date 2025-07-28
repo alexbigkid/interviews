@@ -1,0 +1,327 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'NODE_VERSION',
+            choices: ['20', '22'],
+            description: 'Node.js version to use for testing'
+        )
+    }
+
+    environment {
+        PROJECT_DIR = '012_typescript'
+        NODE_OPTIONS = '--max_old_space_size=4096'
+    }
+
+    triggers {
+        // Equivalent to GitHub Actions: on push/pull_request to main branch
+        githubPush()
+        pullRequest(events: ['OPENED', 'SYNCHRONIZE'], targetBranches: ['main'])
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "🔄 Checking out code..."
+                checkout scm
+            }
+        }
+
+        stage('Lint') {
+            // Equivalent to the 'lint' job in GitHub Actions
+            steps {
+                echo "🔍 Running ESLint and Prettier checks..."
+
+                script {
+                    // Equivalent to actions/setup-node@v4 with node-version: '20'
+                    def nodeVersion = '20'
+                    setupNodeJs(nodeVersion)
+                }
+
+                dir(env.PROJECT_DIR) {
+                    // Equivalent to "Install dependencies": npm install
+                    echo "📦 Installing dependencies..."
+                    sh 'npm install'
+
+                    // Equivalent to "Run ESLint": npm run lint
+                    echo "🔍 Running ESLint..."
+                    sh 'npm run lint'
+
+                    // Equivalent to "Run Prettier check": npm run format -- --check
+                    echo "💅 Running Prettier check..."
+                    sh 'npm run format -- --check'
+                }
+            }
+            post {
+                failure {
+                    echo "💣 ❌ Linting failed!"
+                }
+                success {
+                    echo "✅ Linting passed!"
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            // Equivalent to the 'unit-tests' job with matrix strategy
+            matrix {
+                axes {
+                    axis {
+                        name 'NODE_VERSION_MATRIX'
+                        values '20', '22'  // Matches GitHub Actions: node: [ "20", "22" ]
+                    }
+                    axis {
+                        name 'OS_MATRIX'
+                        values 'ubuntu', 'macos'  // Matches: os: [ ubuntu, macOS, windows ]
+                    }
+                }
+                stages {
+                    stage('Test Matrix Execution') {
+                        steps {
+                            echo "🧪 Running on ${OS_MATRIX} with Node.js ${NODE_VERSION_MATRIX}..."
+
+                            script {
+                                // Equivalent to "Check runner" step (skip on Windows)
+                                if (OS_MATRIX != 'windows') {
+                                    if (fileExists('.github/scripts/AgentInfo.sh')) {
+                                        echo "🖥️  Running agent info script..."
+                                        sh 'chmod +x .github/scripts/AgentInfo.sh'
+                                        sh '.github/scripts/AgentInfo.sh'
+                                    } else {
+                                        echo "ℹ️  Agent info script not found, showing basic info..."
+                                        sh '''
+                                            echo "=== Jenkins Agent Information ==="
+                                            echo "Node Name: $NODE_NAME"
+                                            echo "OS Matrix: ${OS_MATRIX}"
+                                            echo "Node.js Version: ${NODE_VERSION_MATRIX}"
+                                            echo "Workspace: $WORKSPACE"
+                                            echo "Build Number: $BUILD_NUMBER"
+                                            echo "==============================="
+                                        '''
+                                    }
+                                }
+
+                                // Equivalent to actions/setup-node@v4
+                                setupNodeJs(NODE_VERSION_MATRIX)
+                            }
+
+                            dir(env.PROJECT_DIR) {
+                                // Equivalent to "Install dependencies": npm install
+                                echo "📦 Installing dependencies..."
+                                sh 'npm install'
+
+                                // Equivalent to "Build TypeScript": npm run build
+                                echo "🔨 Building TypeScript..."
+                                sh 'npm run build'
+
+                                // Equivalent to "Run tests": npm run test:coverage
+                                echo "🧪 Running tests with coverage..."
+                                sh 'npm run test:coverage'
+                            }
+                        }
+                        post {
+                            always {
+                                // Archive test results and coverage reports
+                                dir(env.PROJECT_DIR) {
+                                    // Publish HTML coverage report
+                                    publishHTML([
+                                        allowMissing: false,
+                                        alwaysLinkToLastBuild: true,
+                                        keepAll: true,
+                                        reportDir: 'coverage/lcov-report',
+                                        reportFiles: 'index.html',
+                                        reportName: "Coverage Report (${OS_MATRIX}-Node${NODE_VERSION_MATRIX})",
+                                        reportTitles: ''
+                                    ])
+
+                                    // Archive coverage files for Codecov
+                                    archiveArtifacts artifacts: 'coverage/lcov.info', allowEmptyArchive: true
+
+                                    // Archive build artifacts
+                                    archiveArtifacts artifacts: 'dist/**/*', allowEmptyArchive: true
+                                }
+                            }
+                            failure {
+                                echo "💣 ❌ Tests failed on ${OS_MATRIX} with Node.js ${NODE_VERSION_MATRIX}!"
+                            }
+                            success {
+                                echo "✅ Tests passed on ${OS_MATRIX} with Node.js ${NODE_VERSION_MATRIX}!"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Upload Coverage to Codecov') {
+            // Equivalent to "Upload coverage to Codecov" step
+            when {
+                // Only upload from one matrix combination: ubuntu + Node.js 20
+                allOf {
+                    environment name: 'OS_MATRIX', value: 'ubuntu'
+                    environment name: 'NODE_VERSION_MATRIX', value: '20'
+                }
+            }
+            steps {
+                echo "📤 Uploading coverage to Codecov..."
+                dir(env.PROJECT_DIR) {
+                    script {
+                        try {
+                            // Equivalent to codecov/codecov-action@v3
+                            withCredentials([string(credentialsId: 'codecov-token', variable: 'CODECOV_TOKEN')]) {
+                                sh '''
+                                    # Install codecov if not available
+                                    if ! command -v codecov &> /dev/null; then
+                                        npm install -g codecov
+                                    fi
+
+                                    # Upload coverage with same flags as GitHub Actions
+                                    codecov \\
+                                        --file coverage/lcov.info \\
+                                        --flags jest-typescript \\
+                                        --name codecov-coverage \\
+                                        --verbose
+                                '''
+                            }
+                        } catch (Exception e) {
+                            // Equivalent to fail_ci_if_error: false
+                            echo "⚠️  Codecov upload failed but continuing: ${e.getMessage()}"
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                    }
+                }
+            }
+            post {
+                failure {
+                    echo "⚠️  Coverage upload failed, but pipeline continues..."
+                }
+                success {
+                    echo "✅ Coverage uploaded to Codecov successfully!"
+                }
+            }
+        }
+
+        stage('Package & Archive') {
+            steps {
+                echo "📦 Creating package and archiving artifacts..."
+                dir(env.PROJECT_DIR) {
+                    // Create npm package
+                    sh 'npm pack'
+
+                    // Archive the package
+                    archiveArtifacts artifacts: '*.tgz', allowEmptyArchive: true
+                }
+            }
+            post {
+                success {
+                    echo "✅ Package created and archived successfully!"
+                }
+                failure {
+                    echo "💣 ❌ Package creation failed!"
+                }
+            }
+        }
+
+        stage('Demo Applications') {
+            steps {
+                echo "🎮 Testing application scripts..."
+                dir(env.PROJECT_DIR) {
+                    script {
+                        // Test each application script
+                        echo "▶️  Testing hello app..."
+                        sh 'timeout 10s npm run hello || echo "Hello app completed"'
+
+                        echo "▶️  Testing fizz-buzz app (first 10 lines)..."
+                        sh 'timeout 10s npm run fizz-buzz | head -10 || echo "FizzBuzz app working"'
+
+                        echo "▶️  Testing meta-data app..."
+                        sh 'timeout 30s npm run meta-data || echo "Meta-data app completed"'
+                    }
+                }
+            }
+            post {
+                always {
+                    echo "🎯 Application demos completed"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning up workspace..."
+            // Clean up Node.js cache files
+            dir(env.PROJECT_DIR) {
+                sh '''
+                    rm -rf node_modules/.cache || true
+                    rm -rf .eslintcache || true
+                    rm -rf .prettiercache || true
+                    rm -rf *.tsbuildinfo || true
+                '''
+            }
+        }
+        success {
+            echo "🎉 GL 012 TypeScript Tests - Pipeline completed successfully!"
+            script {
+                // Send success notification
+                sendNotification("✅ GL 012 TypeScript Tests passed!", "good")
+            }
+        }
+        failure {
+            echo "💣 ❌ GL 012 TypeScript Tests - Pipeline failed!"
+            script {
+                // Send failure notification
+                sendNotification("❌ GL 012 TypeScript Tests failed!", "danger")
+            }
+        }
+        unstable {
+            echo "⚠️  GL 012 TypeScript Tests - Pipeline completed with warnings!"
+        }
+        cleanup {
+            echo "🗑️  Final cleanup..."
+            cleanWs()
+        }
+    }
+}
+
+// Helper function to setup Node.js
+def setupNodeJs(String version) {
+    echo "🟢 Setting up Node.js ${version}..."
+
+    // Use NodeJS plugin if available, otherwise use nvm
+    try {
+        nodejs(nodeJSInstallationName: "Node-${version}") {
+            sh '''
+                node --version
+                npm --version
+            '''
+        }
+    } catch (Exception e) {
+        echo "NodeJS plugin not available, using nvm..."
+        sh """
+            # Install nvm if not available
+            if [ ! -d "\$HOME/.nvm" ]; then
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            fi
+
+            # Load nvm and install/use Node.js version
+            export NVM_DIR="\$HOME/.nvm"
+            [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
+
+            nvm install ${version}
+            nvm use ${version}
+
+            echo "Node.js version: \$(node --version)"
+            echo "npm version: \$(npm --version)"
+        """
+    }
+}
+
+// Helper function for notifications
+def sendNotification(String message, String color) {
+    echo "Notification: ${message}"
+    // Uncomment and configure as needed:
+    // slackSend(channel: '#ci-cd', color: color, message: message)
+    // emailext(subject: message, body: message, to: 'team@company.com')
+}

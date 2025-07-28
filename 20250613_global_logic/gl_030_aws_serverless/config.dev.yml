@@ -1,0 +1,76 @@
+common:
+  prefix: gl
+  env: dev
+  region: us-west-2
+
+services:
+  gl_deployment_env: dev
+  gl_deployment_region: us-west-2
+  gl_deployment_bucket: gl-ci-deployment-dev
+  gl_users_pool_arn: $GL_USERS_POOL_ARN
+  gl_vpc_security_group_id: $GL_VPC_SECURITY_GROUP_ID
+  gl_vpc_subnet_id1: $GL_VPC_SUBNET_IID1
+  gl_vpc_subnet_id2: $GL_VPC_SUBNET_IID2
+  gl_vpc_subnet_id3: $GL_VPC_SUBNET_IID3
+  gl_db_usr: abk_user
+  gl_db_psw: abk_pswd
+  gl_db_host: gl-postgre-db-dev.ciqrc9amh4ez.us-west-2.rds.amazonaws.com
+  gl_db_port: 5432
+  gl_db_name: glPostgreDBdev
+  gl_db_conn: postgresql://abk_user:abk_pswd@gl-postgre-db-dev.ciqrc9amh4ez.us-west-2.rds.amazonaws.com:5432/glPostgreDBdev?ssl=true
+  gl_log_level: debug
+
+terraform:
+  claim-cert:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    gl_s3_cert_bucket_name: gl-certificates-dev
+    claim_certs_path: claim_certs
+    claim_cert_file_name: gl-claim-cert_dev.pem.crt
+    claim_cert_id_file_name: gl-claim-cert-id_dev.txt
+    claim_private_key_file_name: gl-claim-private-key_dev.pem.key
+    claim_public_key_file_name: gl-claim-public-key_dev.pem.key
+    gl_fleet_provision_template_name: FleetProvisionTemplate
+    retain_until_timestamp: 2025-06-13T09:51:48Z
+    common_tags:
+      env: dev
+  iot-thing-type:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    gl_device_type: gl-device
+    common_tags:
+      env: dev
+  iot-fleet-provisioning:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    gl_device_policy_name: pubSubDevicePolicy
+    gl_fleet_provision_template_name: FleetProvisionTemplate
+    common_tags:
+      env: dev
+  secure-tunnel:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    gl_securetunnel_policy_name: glSecureTunnelIotPolicy
+    gl_securetunnel_user_group_name: glSecureTunnelIamUserGroup
+    gl_securetunnel_user_role_name: glSecureTunnelIamUserRole
+    common_tags:
+      env: dev
+  byoa-timestream:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    timestream_database_name: model_training
+    timestream_table_name: results
+    iot_timestream_role_name: model_training_timestream_role
+    iot_timestream_policy_name: model_training_timestream_policy
+    iot_timestream_rule_name: model_training_timestream_rule
+    iot_timestream_rule_sql: "SELECT * FROM 'to-cloud/gl-device/+' WHERE tag ='model-training'"
+  releases-bucket:
+    gl_s3_releases_bucket_name: gl-releases-dev
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2
+    gl_agent_path: gl-agent
+    common_tags:
+      env: dev
+  iot-thing-groups:
+    gl_deployment_env: dev
+    gl_deployment_region: us-west-2

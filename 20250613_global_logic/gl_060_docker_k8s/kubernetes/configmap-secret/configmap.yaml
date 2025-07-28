@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  database.properties: |
+    driver=org.postgresql.Driver
+    host=postgres-service
+    port=5432
+    database=myapp
+  app.properties: |
+    app.name=MyApplication
+    app.version=1.0.0
+    log.level=INFO
+  config.json: |
+    {
+      "apiUrl": "https://api.example.com",
+      "timeout": 30,
+      "retries": 3
+    }
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+type: Opaque
+data:
+  database-username: dXNlcg==  # base64 encoded 'user'
+  database-password: cGFzc3dvcmQ=  # base64 encoded 'password'
+  api-key: YWJjZGVmZ2hpams=  # base64 encoded 'abcdefghijk'

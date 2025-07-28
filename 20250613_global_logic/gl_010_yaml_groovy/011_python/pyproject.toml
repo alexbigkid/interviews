@@ -1,0 +1,90 @@
+[project]
+name = "gl-011"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "reactivex>=4.0.4",
+]
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "parameterized",
+    "ruff",
+    "pytest",
+    "pytest-cov"
+]
+
+[project.scripts]
+hello = "gl_011:hello_global_logic.hello"
+fizz_buzz = "gl_011.fizz_buzz:main"
+meta_data = "gl_011.meta_data:main"
+
+[build-system]
+requires = ["uv_build>=0.7.12,<0.8"]
+build-backend = "uv_build"
+
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+
+[tool.ruff]
+line-length = 98
+indent-width = 4
+src = ["src", "tests"]
+
+
+[tool.ruff.lint]
+preview = true
+select = [
+    # pycodestyle
+    "E",
+    "W",
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    "E302",
+    "F401"
+]
+extend-ignore = ["D203", "E231", "E202", "S108", "S311"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow assert statements
+"package_build.py" = ["S607"]  # Allow subprocess with partial executable paths (dpkg-deb, dpkg-scanpackages, gzip, choco)
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+docstring-code-format = true
+
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:reactivex.*",
+]
+
+

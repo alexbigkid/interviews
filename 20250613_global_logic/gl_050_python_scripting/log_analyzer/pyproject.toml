@@ -1,0 +1,10 @@
+[project]
+name = "log-analyzer"
+version = "0.1.0"
+description = "Log analysis utility for DevOps monitoring and debugging"
+authors = [{name = "DevOps Team", email = "devops@example.com"}]
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,69 @@
+name: GL 012 TypeScript Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd 012_typescript && npm install
+
+      - name: Run ESLint
+        run: cd 012_typescript && npm run lint
+
+      - name: Run Prettier check
+        run: cd 012_typescript && npm run format -- --check
+
+  unit-tests:
+    name: Run on ${{ matrix.node }} - ${{ matrix.os }}
+    needs: lint
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ ubuntu, macOS, windows ]
+        node: [ "20", "22" ]
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check runner
+        if: ${{ !contains(matrix.os, 'windows') }}
+        run: .github/scripts/AgentInfo.sh
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: cd 012_typescript && npm install
+
+      - name: Build TypeScript
+        run: cd 012_typescript && npm run build
+
+      - name: Run tests
+        run: cd 012_typescript && npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.os == 'ubuntu' && matrix.node == '20' && ${{ !cancelled() }}
+        with:
+          file: ./012_typescript/coverage/lcov.info
+          flags: jest-typescript
+          name: codecov-coverage
+          verbose: true
+          fail_ci_if_error: false

@@ -1,0 +1,280 @@
+name: Android Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'android-hello-world/**'
+      - '.github/workflows/android-build.yml'
+    tags:
+      - 'android-patch'
+      - 'android-minor'
+      - 'android-major'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'android-hello-world/**'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_GITHUB_ISSUES: "1"
+
+jobs:
+  check-version-bump:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy_beta: ${{ steps.check.outputs.should_deploy_beta }}
+      version_type: ${{ steps.check.outputs.version_type }}
+    steps:
+      - name: Check for version bump tags
+        id: check
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/android-patch || "${{ github.ref }}" == refs/tags/android-minor || "${{ github.ref }}" == refs/tags/android-major ]]; then
+            echo "should_deploy_beta=true" >> $GITHUB_OUTPUT
+            TAG_NAME="${GITHUB_REF#refs/tags/android-}"
+            echo "version_type=$TAG_NAME" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.version_bump }}" != "none" ]]; then
+            echo "should_deploy_beta=true" >> $GITHUB_OUTPUT
+            echo "version_type=${{ github.event.inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy_beta=false" >> $GITHUB_OUTPUT
+            echo "version_type=none" >> $GITHUB_OUTPUT
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./android-hello-world
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: ./android-hello-world
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Run unit tests
+        run: |
+          bundle exec fastlane test
+
+      - name: Build debug APK
+        run: |
+          bundle exec fastlane build_debug
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-results-${{ github.run_number }}
+          path: |
+            android-hello-world/app/build/test-results/
+            android-hello-world/app/build/reports/
+          retention-days: 30
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk-${{ github.run_number }}
+          path: android-hello-world/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+  build-and-deploy-beta:
+    needs: [check-version-bump, test]
+    if: needs.check-version-bump.outputs.should_deploy_beta == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./android-hello-world
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: ./android-hello-world
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Google Play Service Account
+        env:
+          GOOGLE_PLAY_JSON_KEY_DATA: ${{ secrets.GOOGLE_PLAY_JSON_KEY_DATA }}
+        run: |
+          echo "$GOOGLE_PLAY_JSON_KEY_DATA" > google-play-service-account.json
+
+      - name: Setup Android Keystore
+        env:
+          ANDROID_KEYSTORE_DATA: ${{ secrets.ANDROID_KEYSTORE_DATA }}
+        run: |
+          echo "$ANDROID_KEYSTORE_DATA" | base64 --decode > android-keystore.jks
+
+      - name: Bump version
+        env:
+          VERSION_TYPE: ${{ needs.check-version-bump.outputs.version_type }}
+        run: |
+          # Get current version code and name
+          CURRENT_VERSION_CODE=$(grep -oP 'versionCode \K\d+' app/build.gradle)
+          CURRENT_VERSION_NAME=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+          
+          # Parse version name (assuming semantic versioning)
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION_NAME"
+          MAJOR=${VERSION_PARTS[0]:-1}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          case $VERSION_TYPE in
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+          esac
+          
+          NEW_VERSION_NAME="$MAJOR.$MINOR.$PATCH"
+          NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
+          
+          # Update build.gradle
+          sed -i "s/versionCode $CURRENT_VERSION_CODE/versionCode $NEW_VERSION_CODE/g" app/build.gradle
+          sed -i "s/versionName \"$CURRENT_VERSION_NAME\"/versionName \"$NEW_VERSION_NAME\"/g" app/build.gradle
+          
+          echo "Updated version from $CURRENT_VERSION_NAME ($CURRENT_VERSION_CODE) to $NEW_VERSION_NAME ($NEW_VERSION_CODE)"
+
+      - name: Build release AAB
+        env:
+          ANDROID_KEYSTORE_PATH: "./android-keystore.jks"
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          bundle exec fastlane run gradle task:bundleRelease properties:"{
+            'android.injected.signing.store.file':'$ANDROID_KEYSTORE_PATH',
+            'android.injected.signing.store.password':'$ANDROID_KEYSTORE_PASSWORD',
+            'android.injected.signing.key.alias':'$ANDROID_KEY_ALIAS',
+            'android.injected.signing.key.password':'$ANDROID_KEY_PASSWORD'
+          }"
+
+      - name: Deploy to Google Play Beta
+        env:
+          ANDROID_PACKAGE_NAME: ${{ secrets.ANDROID_PACKAGE_NAME }}
+          GOOGLE_PLAY_JSON_KEY_PATH: "./google-play-service-account.json"
+        run: |
+          bundle exec fastlane run upload_to_play_store track:beta aab:app/build/outputs/bundle/release/app-release.aab json_key:"$GOOGLE_PLAY_JSON_KEY_PATH"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-build-${{ github.run_number }}
+          path: |
+            android-hello-world/app/build/outputs/bundle/release/*.aab
+            android-hello-world/app/build.gradle
+          retention-days: 90
+
+      - name: Commit version bump and create version tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Get the new version from build.gradle
+          NEW_VERSION_NAME=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+          NEW_VERSION_CODE=$(grep -oP 'versionCode \K\d+' app/build.gradle)
+          
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add app/build.gradle
+            git commit -m "Android: Bump version to $NEW_VERSION_NAME ($NEW_VERSION_CODE) - ${{ needs.check-version-bump.outputs.version_type }}"
+            git push
+          fi
+          
+          # Create and push version tag
+          VERSION_TAG="v$NEW_VERSION_NAME-android"
+          git tag -a "$VERSION_TAG" -m "Android Release $NEW_VERSION_NAME (Version Code $NEW_VERSION_CODE)"
+          git push origin "$VERSION_TAG"
+          
+          echo "Created version tag: $VERSION_TAG"
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          rm -f google-play-service-account.json
+          rm -f android-keystore.jks
+
+  cleanup-tags:
+    needs: [check-version-bump, build-and-deploy-beta]
+    if: always() && startsWith(github.ref, 'refs/tags/android-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete version bump tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin --delete "$TAG_NAME" || true

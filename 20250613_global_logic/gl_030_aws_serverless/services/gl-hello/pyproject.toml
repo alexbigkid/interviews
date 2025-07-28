@@ -1,0 +1,42 @@
+[project]
+name = "gl-hello"
+version = "1.0.0"
+description = "GL gl-hello Service"
+requires-python = ">=3.11"
+dependencies = [
+    "jsonschema==4.17.3",
+]
+
+[project.optional-dependencies]
+test = [
+    "boto3",
+    "coverage",
+    "parameterized",
+]
+dev = [
+    "wheel",
+    "pip-check",
+    "pip-chill",
+    "pipdeptree",
+    "boto3",
+    "coverage",
+    "parameterized",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.uv]
+dev-dependencies = [
+    "boto3",
+    "coverage",
+    "parameterized",
+    "wheel",
+    "pip-check", 
+    "pip-chill",
+    "pipdeptree",
+]

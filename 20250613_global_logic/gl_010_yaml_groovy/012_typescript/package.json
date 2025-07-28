@@ -1,0 +1,42 @@
+{
+  "name": "gl-012",
+  "version": "0.1.0",
+  "description": "TypeScript implementation of gl-011 Python project",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "hello": "tsx src/hello-global-logic.ts",
+    "fizz-buzz": "tsx src/fizz-buzz.ts",
+    "meta-data": "tsx src/meta-data.ts",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src tests --ext .ts",
+    "format": "prettier --write src tests",
+    "clean": "rm -rf dist coverage node_modules package-lock.json .eslintcache .prettiercache *.tsbuildinfo",
+    "reset": "npm run clean && npm install"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "bin": {
+    "hello": "./dist/hello-global-logic.js",
+    "fizz-buzz": "./dist/fizz-buzz.js",
+    "meta-data": "./dist/meta-data.js"
+  }
+}

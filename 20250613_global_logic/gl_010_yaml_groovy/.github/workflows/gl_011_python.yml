@@ -1,0 +1,61 @@
+name: GL 011 Python Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Ruff lint
+        uses: astral-sh/ruff-action@v3
+        with:
+          src: "./011_python"
+
+  unit-tests:
+    name: Run on ${{ matrix.py }} - ${{ matrix.os }}
+    needs: ruff
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ ubuntu, macOS, windows ]
+        # py: [ "3.12", "3.13"]
+        py: [ "3.13"]
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check runner
+        if: ${{ !contains(matrix.os, 'windows') }}
+        run: |
+          .github/scripts/AgentInfo.sh
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.py }}
+        run: uv python install ${{ matrix.py }}
+
+      - name: Install dependencies
+        run: cd 011_python && uv sync --group dev
+
+      - name: Run tests
+        run: cd 011_python && uv run pytest --cov --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.os == 'ubuntu' && matrix.py == '3.13' && ${{ !cancelled() }}
+        with:
+          file: ./011_python/coverage.xml
+          flags: pytest
+          name: codecov-coverage
+          verbose: true
+          fail_ci_if_error: false

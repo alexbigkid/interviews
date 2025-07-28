@@ -1,0 +1,76 @@
+common:
+  prefix: $GL_PRJ_NAME
+  env: $GL_ENV
+  region: $GL_REGION
+
+services:
+  gl_deployment_env: $GL_ENV
+  gl_deployment_region: $GL_REGION
+  gl_deployment_bucket: $GL_PRJ_NAME-ci-deployment-$GL_ENV
+  gl_users_pool_arn: $GL_USERS_POOL_ARN
+  gl_vpc_security_group_id: $GL_VPC_SECURITY_GROUP_ID
+  gl_vpc_subnet_id1: $GL_VPC_SUBNET_IID1
+  gl_vpc_subnet_id2: $GL_VPC_SUBNET_IID2
+  gl_vpc_subnet_id3: $GL_VPC_SUBNET_IID3
+  gl_db_usr: $GL_DB_USR
+  gl_db_psw: $GL_DB_PSW
+  gl_db_host: $GL_DB_HOST
+  gl_db_port: $GL_DB_PORT
+  gl_db_name: $GL_DB_NAME
+  gl_db_conn: $GL_DB_CONN
+  gl_log_level: $LOG_LEVEL
+
+terraform:
+  claim-cert:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    gl_s3_cert_bucket_name: $GL_PRJ_NAME-certificates-$GL_ENV
+    claim_certs_path: claim_certs
+    claim_cert_file_name: $GL_PRJ_NAME-claim-cert_$GL_ENV.pem.crt
+    claim_cert_id_file_name: $GL_PRJ_NAME-claim-cert-id_$GL_ENV.txt
+    claim_private_key_file_name: $GL_PRJ_NAME-claim-private-key_$GL_ENV.pem.key
+    claim_public_key_file_name: $GL_PRJ_NAME-claim-public-key_$GL_ENV.pem.key
+    gl_fleet_provision_template_name: FleetProvisionTemplate
+    retain_until_timestamp: $GL_CERT_VALID_UNTIL_DATE_TIME
+    common_tags:
+      env: $GL_ENV
+  iot-thing-type:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    gl_device_type: $GL_PRJ_NAME-device
+    common_tags:
+      env: $GL_ENV
+  iot-fleet-provisioning:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    gl_device_policy_name: pubSubDevicePolicy
+    gl_fleet_provision_template_name: FleetProvisionTemplate
+    common_tags:
+      env: $GL_ENV
+  secure-tunnel:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    gl_securetunnel_policy_name: glSecureTunnelIotPolicy
+    gl_securetunnel_user_group_name: glSecureTunnelIamUserGroup
+    gl_securetunnel_user_role_name: glSecureTunnelIamUserRole
+    common_tags:
+      env: $GL_ENV
+  byoa-timestream:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    timestream_database_name: model_training
+    timestream_table_name: results
+    iot_timestream_role_name: model_training_timestream_role
+    iot_timestream_policy_name: model_training_timestream_policy
+    iot_timestream_rule_name: model_training_timestream_rule
+    iot_timestream_rule_sql: "SELECT * FROM 'to-cloud/$GL_PRJ_NAME-device/+' WHERE tag ='model-training'"
+  releases-bucket:
+    gl_s3_releases_bucket_name: $GL_PRJ_NAME-releases-$GL_ENV
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION
+    gl_agent_path: gl-agent
+    common_tags:
+      env: $GL_ENV
+  iot-thing-groups:
+    gl_deployment_env: $GL_ENV
+    gl_deployment_region: $GL_REGION

@@ -1,0 +1,7 @@
+# Install test dependencies
+boto3
+coverage
+parameterized
+
+# Install dependencies
+-r requirements.txt

@@ -1,0 +1,81 @@
+[project]
+name = "binary-tree-prep"
+version = "0.1.0"
+description = "Binary Tree Interview Preparation with Python"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "parameterized",
+    "ruff",
+    "pytest",
+    "pytest-cov"
+]
+
+[project.scripts]
+examples = "binary_tree_prep.examples:main"
+test = "pytest:main"
+
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+
+[tool.ruff]
+line-length = 98
+indent-width = 4
+src = ["src", "tests"]
+
+
+[tool.ruff.lint]
+preview = true
+select = [
+    # pycodestyle
+    "E",
+    "W",
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    "E302",
+    "F401"
+]
+extend-ignore = ["D203", "E231", "E202", "S108", "S311"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "D100", "D101", "D102", "D103", "D104", "D105", "D107"]  # Allow assert statements, disable docstring requirements for tests
+"package_build.py" = ["S607"]  # Allow subprocess with partial executable paths (dpkg-deb, dpkg-scanpackages, gzip, choco)
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+docstring-code-format = true
+
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2

@@ -1,0 +1,144 @@
+service: gl-hello
+frameworkVersion: "3"
+configValidationMode: error
+
+plugins:
+- serverless-deployment-bucket
+# - serverless-domain-manager
+# - serverless-iam-roles-per-function
+# - serverless-latest-layer-version
+- serverless-prune-plugin
+- serverless-python-requirements
+package:
+  individually: true
+  patterns:
+  - "!**"
+  - "/node_modules/**"
+
+provider:
+  name: aws
+  runtime: python3.11
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
+  stackName: "${self:service}-${self:provider.stage}"
+  timeout: 29
+  deploymentBucket:
+    name: ${file(../../config.${self:provider.stage}.yml):services.gl_deployment_bucket}
+    serverSideEncryption: AES256
+  iam:
+    role:
+      statements:
+      # for VPC to work
+      - Effect: Allow
+        Action:
+        - "ec2:DescribeNetworkInterfaces"
+        - "ec2:CreateNetworkInterface"
+        - "ec2:DeleteNetworkInterface"
+        - "ec2:DescribeInstances"
+        - "ec2:AttachNetworkInterface"
+        Resource:
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-${self:provider.stage}-*
+      # for CloudWatch logs to work
+      - Effect: Allow
+        Action:
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+        Resource:
+        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*
+  # vpc:
+  #   securityGroupIds:
+  #   - ${file(../../config.${self:provider.stage}.yml):services.gl_vpc_security_group_id}
+  #   subnetIds:
+  #   - ${file(../../config.${self:provider.stage}.yml):services.gl_vpc_subnet_id1}
+  #   - ${file(../../config.${self:provider.stage}.yml):services.gl_vpc_subnet_id2}
+  #   - ${file(../../config.${self:provider.stage}.yml):services.gl_vpc_subnet_id3}
+  environment:
+    # GL_DB_USR: ${file(../../config.${self:provider.stage}.yml):services.gl_db_usr}
+    # GL_DB_PSW: ${file(../../config.${self:provider.stage}.yml):services.gl_db_psw}
+    # GL_DB_HOST: ${file(../../config.${self:provider.stage}.yml):services.gl_db_host}
+    # GL_DB_PORT: ${file(../../config.${self:provider.stage}.yml):services.gl_db_port}
+    # GL_DB_NAME: ${file(../../config.${self:provider.stage}.yml):services.gl_db_name}
+    # LOG_LEVEL: ${file(../../config.${self:provider.stage}.yml):services.gl_log_level}
+    PYTHONPATH: src
+
+custom:
+  version: 1.0
+  # domain:
+  #   local: 'a6i0.net'
+  #   dev: 'a6i0.net'
+  #   qa: 'a6i1.net'
+  #   prod: 'globallogic.co'
+  # customDomain:
+  #   domainName: ${self:service}.${self:custom.domain.${self:provider.stage}}
+  #   stage: ${self:provider.stage}
+  #   createRoute53Record: true
+  prune:
+    # comes from serverless-prune-plugin
+    automatic: true # Enable auto pruning
+    number: 2 # keeps this number of versions of lambdas and CloudFormation stacks
+
+functions:
+  gl-hello:
+    handler: src/gl_hello.handler
+    name: ${self:service}-${self:provider.stage}-glHello
+    description: "GL hello Lambda function"
+    package:
+      patterns:
+      - src/gl_hello*.py
+    events:
+    - http:
+        path: gl-hello
+        method: GET
+        cors: true
+        # Temporarily disabled for minimal deployment
+        # authorizer:
+        #   type: COGNITO_USER_POOLS
+        #   authorizerId:
+        #     Ref: ApiGatewayAuthorizer
+  # gl-hello-post:
+  #   handler: src/gl_hello_post.handler
+  #   name: ${self:service}-${self:provider.stage}-glHelloPost
+  #   description: 'GL Hello template POST lambda example'
+  #   events:
+  #     - http:
+  #         path: gl-hello-post
+  #         method: POST
+  #         cors: true
+  #         authorizer:
+  #           type: COGNITO_USER_POOLS
+  #           authorizerId:
+  #             Ref: ApiGatewayAuthorizer
+
+# resources:
+#   Resources:
+#     GatewayResponseDefault4XX:
+#       Type: 'AWS::ApiGateway::GatewayResponse'
+#       Properties:
+#         ResponseParameters:
+#           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+#           gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+#         ResponseType: DEFAULT_4XX
+#         RestApiId:
+#           Ref: 'ApiGatewayRestApi'
+#     GatewayResponseDefault5XX:
+#       Type: 'AWS::ApiGateway::GatewayResponse'
+#       Properties:
+#         ResponseParameters:
+#           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+#           gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+#         ResponseType: DEFAULT_5XX
+#         RestApiId:
+#           Ref: 'ApiGatewayRestApi'
+#     ApiGatewayAuthorizer:
+#       DependsOn:
+#       - ApiGatewayRestApi
+#       Type: AWS::ApiGateway::Authorizer
+#       Properties:
+#         Name: cognito-authorizer
+#         IdentitySource: method.request.header.Authorization
+#         RestApiId:
+#           Ref: ApiGatewayRestApi
+#         Type: COGNITO_USER_POOLS
+#         ProviderARNs:
+#         - ${file(../../config.${self:provider.stage}.yml):services.gl_users_pool_arn}

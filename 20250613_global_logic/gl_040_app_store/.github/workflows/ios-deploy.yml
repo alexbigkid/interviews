@@ -1,0 +1,116 @@
+name: iOS Deploy to App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number to deploy (from ios-build workflow)'
+        required: true
+        type: string
+      deployment_environment:
+        description: 'Deployment target'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - testflight
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_GITHUB_ISSUES: "1"
+
+jobs:
+  deploy-to-app-store:
+    runs-on: macos-latest
+    environment: 
+      name: ${{ github.event.inputs.deployment_environment }}
+      url: https://appstoreconnect.apple.com
+    defaults:
+      run:
+        working-directory: ./ios-hello-world
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: ./ios-hello-world
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-release-build-${{ github.event.inputs.build_number }}
+          path: ./ios-hello-world/
+
+      - name: Install certificates and provisioning profiles
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          bundle exec fastlane sync_signing
+
+      - name: Deploy to TestFlight (if selected)
+        if: github.event.inputs.deployment_environment == 'testflight'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          IPA_FILE=$(find . -name "*.ipa" | head -1)
+          if [ -n "$IPA_FILE" ]; then
+            bundle exec fastlane run upload_to_testflight ipa:"$IPA_FILE"
+          else
+            echo "No IPA file found in artifacts"
+            exit 1
+          fi
+
+      - name: Deploy to App Store (if production)
+        if: github.event.inputs.deployment_environment == 'production'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          IPA_FILE=$(find . -name "*.ipa" | head -1)
+          if [ -n "$IPA_FILE" ]; then
+            bundle exec fastlane run upload_to_app_store ipa:"$IPA_FILE" submit_for_review:false automatic_release:false
+          else
+            echo "No IPA file found in artifacts"
+            exit 1
+          fi
+
+      - name: Create deployment summary
+        run: |
+          echo "## iOS Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.deployment_environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bundle Identifier:** ${{ secrets.IOS_BUNDLE_IDENTIFIER }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.deployment_environment }}" == "production" ]; then
+            echo "- **Status:** Uploaded to App Store (manual review required)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** Deployed to TestFlight" >> $GITHUB_STEP_SUMMARY
+          fi

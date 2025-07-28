@@ -1,0 +1,374 @@
+pipeline {
+    agent {
+        node {
+            label "docker-agent-cloud-infrastructure"
+        }
+    }
+
+
+    options {
+        ansiColor('vga')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 24, unit: "MINUTES")
+    }
+
+
+    triggers {
+        pollSCM 'H/5 * * * *'
+    }
+
+
+    environment {
+        GL_DEPLOYMENT_REGION   = 'us-west-2'
+        GL_VERSION_STRING      = "${new Date().format('yyyy.MM.dd')}-j${env.BUILD_ID}"
+        PYTHON_VERSION          = '3.11.5'
+        PYTHON_VIRTUAL_ENV_FILE = '.python-version'
+    }
+
+
+    stages {
+        // ====================================================================
+        stage('Prepare Build') {
+        // ====================================================================
+            steps {
+                script {
+                    // --------------------------------------------------------
+                    label 'Print version string'
+                    // --------------------------------------------------------
+                    echo "GL_VERSION_STRING: ${GL_VERSION_STRING}"
+                }
+                script {
+                    // --------------------------------------------------------
+                    label 'Install additional required tools'
+                    // --------------------------------------------------------
+                    sh './install-tools.sh'
+                }
+            }
+        }
+
+
+        // ====================================================================
+        stage('DEV - Deploy') {
+        // ====================================================================
+            // when {
+            //     // Will run this stage only if the commit has a dev tag.
+            //     expression { sh(script: 'git tag --points-at HEAD | grep -q "^dev$"', returnStatus: true) == 0 }
+            // }
+            environment {
+                GL_ENV      = 'dev'
+                GL_AWS_CREDS           = "AWS_${GL_ENV.toUpperCase()}"
+                GL_DB                  = credentials("gl_db_${GL_ENV}")
+                GL_DB_HOST             = credentials("gl_db_host_${GL_ENV}")
+                GL_DB_PORT             = credentials("gl_db_port_${GL_ENV}")
+                GL_DB_NAME             = credentials("gl_db_name_${GL_ENV}")
+                GL_COGNITO             = credentials("gl_cognito_${GL_ENV}")
+                LOG_LEVEL               = 'debug'
+            }
+            steps {
+                script {
+                    // --------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} deploy started - Notify Slack Channel"
+                    // --------------------------------------------------------
+                    slackSend color: "#FFFF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy started - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Setup Environment"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./001_setup-env.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Terraform"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./002_deploy-terraform.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./002_deploy-terraform.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Lambda Layers"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./003_deploy-lambda-layers.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./003_deploy-lambda-layers.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Services"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        withCredentials([string(credentialsId: 'gl_npm_token_ro', variable: 'GL_NPM_TOKEN_RO')]) {
+                            sh "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                            // echo "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        }
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Test Integration"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./005_run-integration-tests.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./005_run-integration-tests.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Clean up"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+            }
+            post {
+                success {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy success - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#00FF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy success - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                    }
+                }
+                unsuccessful {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy failed - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#FF0000", failOnError: true, message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy failed - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                    }
+                }
+            }
+        }
+
+
+        // ====================================================================
+        stage('QA - Deploy') {
+        // ====================================================================
+            // when {
+            //     // Will run this stage only if the commit has a qa tag.
+            //     expression { sh(script: 'git tag --points-at HEAD | grep -q "^qa$"', returnStatus: true) == 0 }
+            // }
+            environment {
+                GL_ENV      = 'qa'
+                GL_AWS_CREDS           = "AWS_${GL_ENV.toUpperCase()}"
+                GL_DB                  = credentials("gl_db_${GL_ENV}")
+                GL_DB_HOST             = credentials("gl_db_host_${GL_ENV}")
+                GL_DB_PORT             = credentials("gl_db_port_${GL_ENV}")
+                GL_DB_NAME             = credentials("gl_db_name_${GL_ENV}")
+                GL_COGNITO             = credentials("gl_cognito_${GL_ENV}")
+                LOG_LEVEL               = 'debug'
+            }
+            steps {
+                script {
+                    // --------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} deploy started - Notify Slack Channel"
+                    // --------------------------------------------------------
+                    slackSend color: "#FFFF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy started - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Setup Environment"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./001_setup-env.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Terraform"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./002_deploy-terraform.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./002_deploy-terraform.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Lambnda Layers"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./003_deploy-lambda-layers.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./003_deploy-lambda-layers.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Services"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        withCredentials([string(credentialsId: 'gl_npm_token_ro', variable: 'GL_NPM_TOKEN_RO')]) {
+                            sh "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                            // echo "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        }
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Test Integration"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./005_run-integration-tests.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./005_run-integration-tests.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Clean up"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+            }
+            post {
+                success {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy success - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#00FF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy success - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                    }
+                }
+                unsuccessful {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy failed - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#FF0000", failOnError: true, message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy failed - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                    }
+                }
+            }
+        }
+
+
+        // ====================================================================
+        stage('PROD - Deploy') {
+        // ====================================================================
+            when {
+                // Will run this stage only if the commit has a release tag.
+                expression { sh(script: 'git tag --points-at HEAD | grep -q "^release$"', returnStatus: true) == 0 }
+            }
+            environment {
+                GL_ENV      = 'prod'
+                GL_AWS_CREDS           = "AWS_${GL_ENV.toUpperCase()}"
+                GL_DB                  = credentials("gl_db_${GL_ENV}")
+                GL_DB_HOST             = credentials("gl_db_host_${GL_ENV}")
+                GL_DB_PORT             = credentials("gl_db_port_${GL_ENV}")
+                GL_DB_NAME             = credentials("gl_db_name_${GL_ENV}")
+                GL_COGNITO             = credentials("gl_cognito_${GL_ENV}")
+                LOG_LEVEL               = 'error'
+            }
+            steps {
+                script {
+                    // --------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} deploy started - Notify Slack Channel"
+                    // --------------------------------------------------------
+                    slackSend color: "#FFFF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy started - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Setup Environment"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./001_setup-env.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Terraform"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./002_deploy-terraform.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Lambda Layers"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./003_deploy-lambda-layers.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Deploy Services"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        withCredentials([string(credentialsId: 'gl_npm_token_ro', variable: 'GL_NPM_TOKEN_RO')]) {
+                            sh "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                            // echo "./004_deploy-services.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        }
+                    }
+                }
+                // script {
+                //     // ---------------------------------------------------------
+                //     label "${GL_ENV.toUpperCase()} - Test Integration"
+                //     // ---------------------------------------------------------
+                //     withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                //         sh "./005_run-integration-tests.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                //     }
+                // }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Clean up"
+                    // ---------------------------------------------------------
+                    withAWS(credentials: "${GL_AWS_CREDS}", region: "${GL_DEPLOYMENT_REGION}") {
+                        sh "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                        // echo "./006_run-cleanups.sh ${GL_ENV} ${GL_DEPLOYMENT_REGION}"
+                    }
+                }
+                script {
+                    // ---------------------------------------------------------
+                    label "${GL_ENV.toUpperCase()} - Adding release tag"
+                    // ---------------------------------------------------------
+                    withCredentials([sshUserPrivateKey(credentialsId: 'bitbucket-push', keyFileVariable: 'SSH_KEY_PATH')]) {
+                        sh '''
+                            GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH" git tag ${GL_VERSION_STRING}
+                            GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH" git push origin ${GL_VERSION_STRING}
+                        '''
+                    }
+                }
+            }
+            post {
+                cleanup {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} - Removing ${GL_ENV} tag"
+                        // ---------------------------------------------------------
+                        withCredentials([sshUserPrivateKey(credentialsId: 'bitbucket-push', keyFileVariable: 'SSH_KEY_PATH')]) {
+                            sh '''
+                                GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH" git tag --delete release
+                                GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH" git push --delete origin release
+                            '''
+                        }
+                    }
+                }
+                success {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy success - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#00FF00", message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy success - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}> with release tag: ${GL_VERSION_STRING})"
+                    }
+                }
+                unsuccessful {
+                    script {
+                        // ---------------------------------------------------------
+                        label "${GL_ENV.toUpperCase()} deploy failed - Notify Slack Channel"
+                        // ---------------------------------------------------------
+                        slackSend color: "#FF0000", failOnError: true, message: "${env.JOB_NAME}-${GL_ENV.toUpperCase()} deploy failed - (<${env.BUILD_URL}|Open job#${env.BUILD_NUMBER}>)"
+                    }
+                }
+            }
+        }
+    }
+}

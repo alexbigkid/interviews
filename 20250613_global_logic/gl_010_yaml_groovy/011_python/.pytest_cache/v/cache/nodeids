@@ -1,0 +1,21 @@
+[
+  "tests/test_fizz_buzz.py::test_fizz_buzz_buzz",
+  "tests/test_fizz_buzz.py::test_fizz_buzz_edge_cases",
+  "tests/test_fizz_buzz.py::test_fizz_buzz_fizz",
+  "tests/test_fizz_buzz.py::test_fizz_buzz_fizzbuzz",
+  "tests/test_fizz_buzz.py::test_fizz_buzz_number",
+  "tests/test_fizz_buzz.py::test_fizz_buzz_type_hint",
+  "tests/test_hello_global_logic.py::test_hello_function_exists",
+  "tests/test_hello_global_logic.py::test_hello_output",
+  "tests/test_meta_data.py::test_handle_processing_error",
+  "tests/test_meta_data.py::test_log_progress",
+  "tests/test_meta_data.py::test_main_function",
+  "tests/test_meta_data.py::test_main_function_timeout",
+  "tests/test_meta_data.py::test_metadata_item_structure",
+  "tests/test_meta_data.py::test_metadata_list",
+  "tests/test_meta_data.py::test_on_completed",
+  "tests/test_meta_data.py::test_on_error",
+  "tests/test_meta_data.py::test_process_metadata_item_failure",
+  "tests/test_meta_data.py::test_process_metadata_item_success",
+  "tests/test_meta_data.py::test_threading_components"
+]

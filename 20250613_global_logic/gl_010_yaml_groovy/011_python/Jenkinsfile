@@ -1,0 +1,269 @@
+pipeline {
+    agent any
+    
+    parameters {
+        choice(
+            name: 'PYTHON_VERSION',
+            choices: ['3.13', '3.12'],
+            description: 'Python version to use for testing'
+        )
+    }
+    
+    environment {
+        PROJECT_DIR = '011_python'
+        UV_VERSION = 'latest'
+    }
+    
+    triggers {
+        // Equivalent to GitHub Actions: on push/pull_request to main branch
+        githubPush()
+        pullRequest(events: ['OPENED', 'SYNCHRONIZE'], targetBranches: ['main'])
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "🔄 Checking out code..."
+                checkout scm
+            }
+        }
+        
+        stage('Ruff Lint') {
+            // Equivalent to the 'ruff' job in GitHub Actions
+            steps {
+                echo "🔍 Running Ruff linting..."
+                script {
+                    // Install uv if not available
+                    def uvInstalled = sh(
+                        script: 'command -v uv >/dev/null 2>&1',
+                        returnStatus: true
+                    )
+                    
+                    if (uvInstalled != 0) {
+                        echo "📦 Installing uv package manager..."
+                        sh '''
+                            curl -LsSf https://astral.sh/uv/install.sh | sh
+                            export PATH="$HOME/.cargo/bin:$PATH"
+                        '''
+                    }
+                    
+                    // Ensure uv is in PATH
+                    env.PATH = "${env.HOME}/.cargo/bin:${env.PATH}"
+                }
+                
+                dir(env.PROJECT_DIR) {
+                    // Equivalent to astral-sh/ruff-action@v3
+                    sh '''
+                        uv tool install ruff
+                        uv tool run ruff check src tests
+                        uv tool run ruff format --check src tests
+                    '''
+                }
+            }
+            post {
+                failure {
+                    echo "💣 ❌ Ruff linting failed!"
+                }
+                success {
+                    echo "✅ Ruff linting passed!"
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            // Equivalent to the 'unit-tests' job with matrix strategy
+            matrix {
+                axes {
+                    axis {
+                        name 'PYTHON_VERSION_MATRIX'
+                        values '3.13'  // Matches GitHub Actions: py: [ "3.13"]
+                    }
+                    axis {
+                        name 'OS_MATRIX'
+                        values 'ubuntu', 'macos'  // Matches: os: [ ubuntu, macOS, windows ]
+                    }
+                }
+                stages {
+                    stage('Test Matrix Execution') {
+                        steps {
+                            echo "🧪 Running on ${OS_MATRIX} with Python ${PYTHON_VERSION_MATRIX}..."
+                            
+                            script {
+                                // Equivalent to "Check runner" step (skip on Windows)
+                                if (OS_MATRIX != 'windows') {
+                                    if (fileExists('.github/scripts/AgentInfo.sh')) {
+                                        echo "🖥️  Running agent info script..."
+                                        sh 'chmod +x .github/scripts/AgentInfo.sh'
+                                        sh '.github/scripts/AgentInfo.sh'
+                                    } else {
+                                        echo "ℹ️  Agent info script not found, showing basic info..."
+                                        sh '''
+                                            echo "=== Jenkins Agent Information ==="
+                                            echo "Node Name: $NODE_NAME"
+                                            echo "OS Matrix: ${OS_MATRIX}"
+                                            echo "Python Version: ${PYTHON_VERSION_MATRIX}"
+                                            echo "Workspace: $WORKSPACE"
+                                            echo "Build Number: $BUILD_NUMBER"
+                                            echo "==============================="
+                                        '''
+                                    }
+                                }
+                            }
+                            
+                            // Equivalent to "Install uv" step (astral-sh/setup-uv@v3)
+                            script {
+                                def uvInstalled = sh(
+                                    script: 'command -v uv >/dev/null 2>&1',
+                                    returnStatus: true
+                                )
+                                
+                                if (uvInstalled != 0) {
+                                    echo "📦 Installing uv package manager (latest)..."
+                                    sh '''
+                                        curl -LsSf https://astral.sh/uv/install.sh | sh
+                                        export PATH="$HOME/.cargo/bin:$PATH"
+                                    '''
+                                }
+                                
+                                env.PATH = "${env.HOME}/.cargo/bin:${env.PATH}"
+                            }
+                            
+                            dir(env.PROJECT_DIR) {
+                                // Equivalent to "Set up Python" step: uv python install
+                                echo "🐍 Setting up Python ${PYTHON_VERSION_MATRIX}..."
+                                sh "uv python install ${PYTHON_VERSION_MATRIX}"
+                                
+                                // Equivalent to "Install dependencies": uv sync --group dev
+                                echo "📚 Installing dependencies..."
+                                sh 'uv sync --group dev'
+                                
+                                // Equivalent to "Run tests": uv run pytest --cov --cov-report=xml
+                                echo "🧪 Running tests with coverage..."
+                                sh 'uv run pytest --cov --cov-report=xml --cov-report=html --cov-report=term'
+                            }
+                        }
+                        post {
+                            always {
+                                // Archive test results and coverage reports
+                                dir(env.PROJECT_DIR) {
+                                    // Publish HTML coverage report (equivalent to artifacts)
+                                    publishHTML([
+                                        allowMissing: false,
+                                        alwaysLinkToLastBuild: true,
+                                        keepAll: true,
+                                        reportDir: 'htmlcov',
+                                        reportFiles: 'index.html',
+                                        reportName: "Coverage Report (${OS_MATRIX}-Python${PYTHON_VERSION_MATRIX})",
+                                        reportTitles: ''
+                                    ])
+                                    
+                                    // Archive coverage XML for Codecov
+                                    archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
+                                }
+                            }
+                            failure {
+                                echo "💣 ❌ Tests failed on ${OS_MATRIX} with Python ${PYTHON_VERSION_MATRIX}!"
+                            }
+                            success {
+                                echo "✅ Tests passed on ${OS_MATRIX} with Python ${PYTHON_VERSION_MATRIX}!"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Upload Coverage to Codecov') {
+            // Equivalent to "Upload coverage to Codecov" step
+            when {
+                // Only upload from one matrix combination: ubuntu + Python 3.13
+                allOf {
+                    environment name: 'OS_MATRIX', value: 'ubuntu'
+                    environment name: 'PYTHON_VERSION_MATRIX', value: '3.13'
+                }
+            }
+            steps {
+                echo "📤 Uploading coverage to Codecov..."
+                dir(env.PROJECT_DIR) {
+                    script {
+                        try {
+                            // Equivalent to codecov/codecov-action@v3
+                            withCredentials([string(credentialsId: 'codecov-token', variable: 'CODECOV_TOKEN')]) {
+                                sh '''
+                                    # Install codecov if not available
+                                    if ! command -v codecov &> /dev/null; then
+                                        pip install codecov
+                                    fi
+                                    
+                                    # Upload coverage with same flags as GitHub Actions
+                                    codecov \\
+                                        --file coverage.xml \\
+                                        --flags pytest \\
+                                        --name codecov-coverage \\
+                                        --verbose \\
+                                        --fail-on-error
+                                '''
+                            }
+                        } catch (Exception e) {
+                            // Equivalent to fail_ci_if_error: false
+                            echo "⚠️  Codecov upload failed but continuing: ${e.getMessage()}"
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                    }
+                }
+            }
+            post {
+                failure {
+                    echo "⚠️  Coverage upload failed, but pipeline continues..."
+                }
+                success {
+                    echo "✅ Coverage uploaded to Codecov successfully!"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "🧹 Cleaning up workspace..."
+            // Clean up Python cache files
+            dir(env.PROJECT_DIR) {
+                sh '''
+                    find . -name "*.pyc" -delete || true
+                    find . -name "__pycache__" -type d -exec rm -rf {} + || true
+                    find . -name ".pytest_cache" -type d -exec rm -rf {} + || true
+                    rm -rf .coverage || true
+                '''
+            }
+        }
+        success {
+            echo "🎉 GL 011 Python Tests - Pipeline completed successfully!"
+            script {
+                // Send success notification (placeholder)
+                sendNotification("✅ GL 011 Python Tests passed!", "good")
+            }
+        }
+        failure {
+            echo "💣 ❌ GL 011 Python Tests - Pipeline failed!"
+            script {
+                // Send failure notification (placeholder)
+                sendNotification("❌ GL 011 Python Tests failed!", "danger")
+            }
+        }
+        unstable {
+            echo "⚠️  GL 011 Python Tests - Pipeline completed with warnings!"
+        }
+        cleanup {
+            echo "🗑️  Final cleanup..."
+            cleanWs()
+        }
+    }
+}
+
+// Helper function for notifications (can be customized)
+def sendNotification(String message, String color) {
+    echo "Notification: ${message}"
+    // Uncomment and configure as needed:
+    // slackSend(channel: '#ci-cd', color: color, message: message)
+    // emailext(subject: message, body: message, to: 'team@company.com')
+}

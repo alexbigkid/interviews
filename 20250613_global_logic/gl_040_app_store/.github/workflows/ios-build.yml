@@ -1,0 +1,246 @@
+name: iOS Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'ios-hello-world/**'
+      - '.github/workflows/ios-build.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'ios-hello-world/**'
+  tags:
+    - 'ios-patch'
+    - 'ios-minor'
+    - 'ios-major'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+env:
+  FASTLANE_SKIP_UPDATE_CHECK: "1"
+  FASTLANE_HIDE_GITHUB_ISSUES: "1"
+
+jobs:
+  check-version-bump:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy_testflight: ${{ steps.check.outputs.should_deploy_testflight }}
+      version_type: ${{ steps.check.outputs.version_type }}
+    steps:
+      - name: Check for version bump tags
+        id: check
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/ios-patch || "${{ github.ref }}" == refs/tags/ios-minor || "${{ github.ref }}" == refs/tags/ios-major ]]; then
+            echo "should_deploy_testflight=true" >> $GITHUB_OUTPUT
+            TAG_NAME="${GITHUB_REF#refs/tags/ios-}"
+            echo "version_type=$TAG_NAME" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.version_bump }}" != "none" ]]; then
+            echo "should_deploy_testflight=true" >> $GITHUB_OUTPUT
+            echo "version_type=${{ github.event.inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy_testflight=false" >> $GITHUB_OUTPUT
+            echo "version_type=none" >> $GITHUB_OUTPUT
+          fi
+
+  test:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./ios-hello-world
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: ./ios-hello-world
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Create iOS workspace
+        run: |
+          mkdir -p HelloWorld.xcworkspace/xcshareddata
+          cat > HelloWorld.xcworkspace/contents.xcworkspacedata << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Workspace
+             version = "1.0">
+             <FileRef
+                location = "group:HelloWorld.xcodeproj">
+             </FileRef>
+          </Workspace>
+          EOF
+
+      - name: Run unit tests
+        run: |
+          bundle exec fastlane test
+
+      - name: Build app for testing
+        run: |
+          bundle exec fastlane build
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results-${{ github.run_number }}
+          path: |
+            ios-hello-world/fastlane/test_output/
+            ios-hello-world/build/reports/
+          retention-days: 30
+
+  build-and-deploy-testflight:
+    needs: [check-version-bump, test]
+    if: needs.check-version-bump.outputs.should_deploy_testflight == 'true'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./ios-hello-world
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: ./ios-hello-world
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Create iOS workspace
+        run: |
+          mkdir -p HelloWorld.xcworkspace/xcshareddata
+          cat > HelloWorld.xcworkspace/contents.xcworkspacedata << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Workspace
+             version = "1.0">
+             <FileRef
+                location = "group:HelloWorld.xcodeproj">
+             </FileRef>
+          </Workspace>
+          EOF
+
+      - name: Install certificates and provisioning profiles
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          bundle exec fastlane sync_signing
+
+      - name: Bump version
+        env:
+          VERSION_TYPE: ${{ needs.check-version-bump.outputs.version_type }}
+        run: |
+          case $VERSION_TYPE in
+            patch)
+              bundle exec fastlane run increment_version_number bump_type:patch xcodeproj:HelloWorld.xcodeproj
+              ;;
+            minor)
+              bundle exec fastlane run increment_version_number bump_type:minor xcodeproj:HelloWorld.xcodeproj
+              ;;
+            major)
+              bundle exec fastlane run increment_version_number bump_type:major xcodeproj:HelloWorld.xcodeproj
+              ;;
+          esac
+
+      - name: Build release archive
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          bundle exec fastlane build
+
+      - name: Deploy to TestFlight
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        run: |
+          bundle exec fastlane run upload_to_testflight
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-build-${{ github.run_number }}
+          path: |
+            ios-hello-world/*.ipa
+            ios-hello-world/HelloWorld.xcodeproj/project.pbxproj
+          retention-days: 90
+
+      - name: Commit version bump and create version tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Get the new version from the project file
+          NEW_VERSION=$(bundle exec fastlane run get_version_number xcodeproj:HelloWorld.xcodeproj)
+          NEW_BUILD=$(bundle exec fastlane run get_build_number xcodeproj:HelloWorld.xcodeproj)
+          
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add HelloWorld.xcodeproj/project.pbxproj
+            git commit -m "iOS: Bump version to $NEW_VERSION ($NEW_BUILD) - ${{ needs.check-version-bump.outputs.version_type }}"
+            git push
+          fi
+          
+          # Create and push version tag
+          VERSION_TAG="v$NEW_VERSION-ios"
+          git tag -a "$VERSION_TAG" -m "iOS Release $NEW_VERSION (Build $NEW_BUILD)"
+          git push origin "$VERSION_TAG"
+          
+          echo "Created version tag: $VERSION_TAG"
+
+  cleanup-tags:
+    needs: [check-version-bump, build-and-deploy-testflight]
+    if: always() && startsWith(github.ref, 'refs/tags/ios-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete version bump tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin --delete "$TAG_NAME" || true
