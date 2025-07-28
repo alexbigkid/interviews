@@ -180,3 +180,6 @@ cython_debug/
 
 # ignore terraform cache files
 **/.terraform/
+
+# ignore serverless cache files
+**/.serverless/
