@@ -1,0 +1,23 @@
+[project]
+name = "apple-exercises"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "ruff",
+    "pytest",
+    "pytest-cov"
+]
+
+[project.scripts]
+abk-apple = "abk_apple:main"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
