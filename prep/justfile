@@ -1,0 +1,47 @@
+# Set shell based on platform (Just 1.0+ syntax)
+set windows-shell := ["powershell.exe", "-c"]
+set shell := ["sh", "-c"]
+
+# Default recipe
+default:
+    @just --list
+
+# Help command that shows all available recipes
+help:
+    @echo "Interview - Available Commands:"
+    @echo ""
+    @echo "Commands:"
+    @echo "  install        Install dependencies"
+    @echo "  interview      Run the interview code"
+    @echo "  test           Run unit tests"
+    @echo "  coverage       Run unit tests with coverage"
+    @echo "  clean          Clean up coverage files"
+    @echo ""
+
+
+
+# Run the interview code
+install:
+    uv sync
+
+# Run the demo interview code
+demo:
+    uv run python src/demo/interview.py
+
+# Run unit tests
+fibonacci:
+    uv run python src/fibonacci/fibonacci.py
+
+# Run unit tests
+test:
+    uv run python -m pytest tests/
+
+# Run unit tests with coverage
+coverage:
+    uv run coverage run -m pytest tests/
+    uv run coverage report
+    uv run coverage html
+
+# Clean up coverage files
+clean:
+    rm -rf .coverage htmlcov/ .pytest_cache/

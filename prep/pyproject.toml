@@ -1,0 +1,114 @@
+[project]
+name = "interview"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+
+[tool.uv]
+managed = true
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "ruff",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+
+[project.scripts]
+interview = "src.demo.interview:main"
+string_operations = "src.string.basic_operations:main"
+common_word = "src.aws_kuiper.most_common_word:main"
+group_people = "src.aws_kuiper.group_people:main"
+
+
+[tool.hatch.build]
+include = ["src"]
+
+
+[tool.coverage.run]
+source = ["src"]
+include = ["src/**/*.py"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/.*"
+]
+branch = true
+
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+skip_empty = false
+
+
+[tool.ruff]
+line-length = 130
+indent-width = 4
+src = ["src", "tests"]
+
+
+[tool.ruff.lint]
+preview = true
+select = [
+    # pycodestyle
+    "E",
+    "W",
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    "E302",
+    "F401"
+]
+extend-ignore = [
+    "D203", "E231", "E202", "S108", "D100", "D103", "S113",
+    "D107", "D101", "D102", "S110", "S104", "S105", "S404", "S603", "S605", "SIM115"
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow assert statements
+"tests/integration/test_integration_real_images.py" = ["S101", "S603", "S607"]  # Allow subprocess calls for tree command in integration tests
+"package_build.py" = ["S607"]  # Allow subprocess with partial executable paths (dpkg-deb, dpkg-scanpackages, gzip, choco)
+".github/scripts/build.py" = ["S603", "S607"]  # Allow subprocess calls for build scripts (powershell, bash)
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+docstring-code-format = true
+
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
