@@ -39,32 +39,32 @@ public class AboutMethods : Koan
 	[Step(1)]
 	public void ExtensionMethodsShowUpInTheCurrentClass()
 	{
-		Assert.Equal(FILL_ME_IN, this.HelloWorld());
+		Assert.Equal("Hello!", this.HelloWorld());
 	}
 
 	[Step(2)]
 	public void ExtensionMethodsWithParameters()
 	{
-		Assert.Equal(FILL_ME_IN, this.SayHello("Cory"));
+		Assert.Equal("Hello, Cory!", this.SayHello("Cory"));
 	}
 
 	[Step(3)]
 	public void ExtensionMethodsWithVariableParameters()
 	{
-		Assert.Equal(FILL_ME_IN, this.MethodWithVariableArguments("Cory", "Will", "Corey"));
+		Assert.Equal(["Cory", "Will", "Corey"], this.MethodWithVariableArguments("Cory", "Will", "Corey"));
 	}
 
-	//Extension methods can extend any class by referencing 
-	//the name of the class they are extending. For example, 
+	//Extension methods can extend any class by referencing
+	//the name of the class they are extending. For example,
 	//we can "extend" the string class like so:
 
 	[Step(4)]
 	public void ExtendingCoreClasses()
 	{
-		Assert.Equal(FILL_ME_IN, "Cory".SayHi());
+		Assert.Equal("Hi, Cory", "Cory".SayHi());
 	}
 
-	//Of course, any of the parameter things you can do with 
+	//Of course, any of the parameter things you can do with
 	//extension methods you can also do with local methods
 
 	private string[] LocalMethodWithVariableParameters(params string[] names)
@@ -75,7 +75,7 @@ public class AboutMethods : Koan
 	[Step(5)]
 	public void LocalMethodsWithVariableParams()
 	{
-		Assert.Equal(FILL_ME_IN, this.LocalMethodWithVariableParameters("Cory", "Will", "Corey"));
+		Assert.Equal(["Cory", "Will", "Corey"], this.LocalMethodWithVariableParameters("Cory", "Will", "Corey"));
 	}
 
 	//Note how we called the method by saying "this.LocalMethodWithVariableParameters"
@@ -84,7 +84,7 @@ public class AboutMethods : Koan
 	[Step(6)]
 	public void LocalMethodsWithoutExplicitReceiver()
 	{
-		Assert.Equal(FILL_ME_IN, LocalMethodWithVariableParameters("Cory", "Will", "Corey"));
+		Assert.Equal(["Cory", "Will", "Corey"], LocalMethodWithVariableParameters("Cory", "Will", "Corey"));
 	}
 
 	//But it is required for Extension Methods, since it needs
@@ -106,11 +106,11 @@ public class AboutMethods : Koan
 	}
 
 	//Static methods don't require an instance of the object
-	//in order to be called. 
+	//in order to be called.
 	[Step(7)]
 	public void CallingStaticMethodsWithoutAnInstance()
 	{
-		Assert.Equal(FILL_ME_IN, InnerSecret.Key());
+		Assert.Equal("Key", InnerSecret.Key());
 	}
 
 	//In fact, you can't call it on an instance variable
@@ -123,7 +123,7 @@ public class AboutMethods : Koan
 	public void CallingPublicMethodsOnAnInstance()
 	{
 		InnerSecret secret = new InnerSecret();
-		Assert.Equal(FILL_ME_IN, secret.Secret());
+		Assert.Equal("Secret", secret.Secret());
 	}
 
 	//Protected methods can only be called by a subclass
@@ -134,7 +134,7 @@ public class AboutMethods : Koan
 	public void CallingProtectedMethodsOnAnInstance()
 	{
 		StateSecret secret = new StateSecret();
-		Assert.Equal(FILL_ME_IN, secret.InformationLeak());
+		Assert.Equal("This is secret", secret.InformationLeak());
 	}
 
 	//But, we can't call the private methods of InnerSecret
@@ -151,7 +151,7 @@ public class AboutMethods : Koan
 		string superSecretMessage = secret.GetType()
 			.GetMethod("SooperSeekrit", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
 			.Invoke(secret, null) as string;
-		Assert.Equal(FILL_ME_IN, superSecretMessage);
+		Assert.Equal("No one will find me!", superSecretMessage);
 	}
 
 	//Up till now we've had explicit return types. It's also
@@ -167,8 +167,8 @@ public class AboutMethods : Koan
 	[Step(11)]
 	public void CallingGenericMethods()
 	{
-		Assert.Equal(typeof(FillMeIn), GiveMeBack<int>(1).GetType());
+		Assert.Equal(typeof(int), GiveMeBack<int>(1).GetType());
 
-		Assert.Equal(FILL_ME_IN, GiveMeBack<string>("Hi!"));
+		Assert.Equal("Hi!", GiveMeBack<string>("Hi!"));
 	}
 }
