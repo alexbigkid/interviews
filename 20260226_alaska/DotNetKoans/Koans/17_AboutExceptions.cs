@@ -6,7 +6,7 @@ namespace DotNetKoans.Koans;
 
 public class AboutExceptions : Koan
 {
-	// Exceptions are 'thrown' when a program runs into something that it wasn't expecting. 
+	// Exceptions are 'thrown' when a program runs into something that it wasn't expecting.
 	// Most of the time, these exceptions will cause the programme to 'break' or stop executing.
 	// We can use 'exception handling' to specify exactly what we want to happen when we run into an issue.
 	// Exceptions are types which inherit from the base 'System.Exception' class
@@ -15,9 +15,9 @@ public class AboutExceptions : Koan
 	public void CatchingAnError()
 	{
 		// We can use a try catch block to 'catch' any errors that occur in the 'try' section
-		// Errors that are not 'caught' or 'handled' will usually trigger an 'Unhandled Exception', 
+		// Errors that are not 'caught' or 'handled' will usually trigger an 'Unhandled Exception',
 		// this is when your console might display some nasty red text and a complicated wall of text known as the call stack.
-		// Catching and handling errors gracefully allows more control over your program and provides 
+		// Catching and handling errors gracefully allows more control over your program and provides
 		// much nicer information to fellow developers (Who will be super grateful!)
 
 		var awareness = 0;
@@ -32,7 +32,7 @@ public class AboutExceptions : Koan
 			awareness += 1;
 		}
 
-		Assert.Equal(FILL_ME_IN, awareness);
+		Assert.Equal(1, awareness);
 	}
 
 	[Step(3)]
@@ -53,7 +53,7 @@ public class AboutExceptions : Koan
 			status = exceptionObject.Message;
 		}
 
-		Assert.Equal(FILL_ME_IN, status);
+		Assert.Equal("Ohm", status);
 
 	}
 
@@ -77,7 +77,7 @@ public class AboutExceptions : Koan
 			Console.WriteLine("Our program had an error, your karma was not saved. Sorry man");
 		}
 
-		Assert.Equal(FILL_ME_IN, KarmaIsSaved);
+		Assert.Equal(false, KarmaIsSaved);
 	}
 
 	[Step(5)]
@@ -98,7 +98,7 @@ public class AboutExceptions : Koan
 			myCurrentState = states[2];
 		}
 
-		Assert.Equal(FILL_ME_IN, myCurrentState);
+		Assert.Equal("Gaining Awareness", myCurrentState);
 	}
 
 	[Step(6)]
@@ -122,11 +122,11 @@ public class AboutExceptions : Koan
 			IKnowNothingAboutExceptions = false;
 		}
 
-		Assert.Equal(FILL_ME_IN, IKnowNothingAboutExceptions);
+		Assert.Equal(false, IKnowNothingAboutExceptions);
 	}
 
-	// This is how we defined our own custom exception. 
-	// It is just a class that inherits from the System.Exception class. 
+	// This is how we defined our own custom exception.
+	// It is just a class that inherits from the System.Exception class.
 	public class ConfidenceException : Exception
 	{
 

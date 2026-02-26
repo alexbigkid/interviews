@@ -27,7 +27,7 @@ public class AboutIteration : Koan
 		// A for loop has three parts: something to run before the loop starts for the first time,
 		// a condition that will decide whether to keep iterating, and something to do after each iteration
 
-		for (var i = 0; FILL_ME_IN; i++)
+		for (var i = 0; i < numbers.Count; i++)
 		{
 			sum += numbers[i];
 		}
@@ -49,7 +49,7 @@ public class AboutIteration : Koan
 			lastAnimal = animals[i];
 			if (animals[i] == "Dogs")
 			{
-				//FILL_ME_IN
+				break;
 			}
 		}
 
@@ -69,7 +69,7 @@ public class AboutIteration : Koan
 		{
 			if (colors[i] == "Blue")
 			{
-				//FILL_ME_IN
+				continue;
 			}
 			new_colors.Add(colors[i]);
 		}
@@ -96,7 +96,7 @@ public class AboutIteration : Koan
 		// Let's do it backwards, just for fun
 
 		int i = 2;
-		while (FILL_ME_IN)
+		while (i >= 0)
 		{
 			sum += numbers[i];
 			i--;
@@ -124,7 +124,7 @@ public class AboutIteration : Koan
 
 		string lastShark = "";
 
-		foreach (var shark in FILL_ME_IN)
+		foreach (var shark in sharkSpecies)
 		{
 			lastShark = shark;
 		}
