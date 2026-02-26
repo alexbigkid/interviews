@@ -81,15 +81,15 @@ public class AboutClasses : Koan
 	[Step(4)]
 	public void UseConstructorsToDefineInitialValues()
 	{
-		Foo4 foo = default(Foo4);
+		Foo4 foo = new Foo4("Bar");
 		Assert.Equal("Bar", foo.Bar);
 	}
 
 	[Step(5)]
 	public void DifferentObjectsHasDifferentInstanceVariables()
 	{
-		Foo4 foo1 = new Foo4();
-		Foo4 foo2 = new Foo4();
+		Foo4 foo1 = new Foo4("super");
+		Foo4 foo2 = new Foo4("man");
 		Assert.NotEqual(foo1.Bar, foo2.Bar);
 	}
 
@@ -97,18 +97,20 @@ public class AboutClasses : Koan
 	{
 		public int Val { get; }
 		public Foo5(int val = 0) => Val = val;
-		public Foo5 Self() =>
-			throw new InvalidOperationException(nameof(Self));
+		public Foo5 Self() => this;
+			// throw new InvalidOperationException(nameof(Self));
 
-		public override string ToString()
-		{
-			return base.ToString();
-		}
+		// public override string ToString()
+		// {
+        //	return base.ToString();
+		// }
+		public override string ToString() => nameof(Foo5);
 
-		public override bool Equals(object obj)
-		{
-			return base.Equals(obj);
-		}
+		// public override bool Equals(object obj)
+		// {
+		// 	return base.Equals(obj);
+		// }
+		public override bool Equals(object obj) => obj is Foo5 foo && foo.Val == this.Val;
 
 		public override int GetHashCode()
 		{
