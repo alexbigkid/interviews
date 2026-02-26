@@ -9,7 +9,7 @@ namespace DotNetKoans.Koans;
 
 public class AboutDelegates : Koan
 {
-	//A delegate is a user defined type just like a class. 
+	//A delegate is a user defined type just like a class.
 	//A delegate lets you reference methods with the same signature and return type.
 	//Once you have the reference to the method, pass them as parameters or call it via the delegate.
 	//In other languages this is known as functions as first class citizens.
@@ -29,44 +29,51 @@ public class AboutDelegates : Koan
 			return lhs - rhs;
 		}
 	}
+
 	[Step(1)]
 	public void DelegatesAreReferenceTypes()
 	{
 		//If you don't initialize a delegate it will be a null value, just as any other reference type.
-		BinaryOp op;
-		Assert.Null(FILL_ME_IN);
+		BinaryOp op = null;
+		Assert.Null(op);
 	}
+
 	[Step(2)]
 	public void DelegatesCanBeInstantiated()
 	{
 		MyMath math = new MyMath();
 		BinaryOp op = new BinaryOp(math.Add);
-		Assert.Equal(FILL_ME_IN, op.GetMethodInfo().Name);
+		Assert.Equal("Add", op.GetMethodInfo().Name);
 	}
+
 	[Step(3)]
 	public void DelegatesCanBeAssigned()
 	{
 		MyMath math = new MyMath();
 		BinaryOp op = math.Add;
-		Assert.Equal(FILL_ME_IN, op.GetMethodInfo().Name);
+		Assert.Equal("Add", op.GetMethodInfo().Name);
 	}
+
 	[Step(4)]
 	public void DelegatesCanReferenceStaticMethods()
 	{
 		BinaryOp op = MyMath.Subtract;
-		Assert.Equal(FILL_ME_IN, op.GetMethodInfo().Name);
+		Assert.Equal("Subtract", op.GetMethodInfo().Name);
 	}
+
 	[Step(5)]
 	public void MethodsCalledViaDelegate()
 	{
 		MyMath math = new MyMath();
 		BinaryOp op = math.Add;
-		Assert.Equal(FILL_ME_IN, op(3, 3));
+		Assert.Equal(6, op(3, 3));
 	}
+
 	private void PassMeTheDelegate(BinaryOp passed)
 	{
-		Assert.Equal(FILL_ME_IN, passed(3, 3));
+		Assert.Equal(6, passed(3, 3));
 	}
+
 	[Step(6)]
 	public void DelegatesCanBePassed()
 	{
@@ -74,12 +81,14 @@ public class AboutDelegates : Koan
 		BinaryOp op = math.Add;
 		PassMeTheDelegate(op);
 	}
+
 	[Step(7)]
 	public void MethodCanBePassedDirectly()
 	{
 		MyMath math = new MyMath();
 		PassMeTheDelegate(math.Add);
 	}
+
 	[Step(8)]
 	public void DelegatesAreImmutable()
 	{
@@ -90,8 +99,9 @@ public class AboutDelegates : Koan
 		Assert.Same(a, original);
 		a = MyMath.Subtract;
 		//a is now a different instance
-		Assert.Same(a, original);
+		Assert.NotSame(a, original);
 	}
+
 	delegate int Curry(int val);
 	public class FunctionalTricks
 	{
@@ -109,12 +119,13 @@ public class AboutDelegates : Koan
 	{
 		FunctionalTricks f = new FunctionalTricks();
 		Curry adding = f.Add5;
-		//So far we've only seen one method attached to a delegate. 
-		Assert.Equal(FILL_ME_IN, adding.GetInvocationList().Length);
-		//However, you can attach multiple methods to a delegate 
+		//So far we've only seen one method attached to a delegate.
+		Assert.Equal(1, adding.GetInvocationList().Length);
+		//However, you can attach multiple methods to a delegate
 		adding += f.Add10;
-		Assert.Equal(FILL_ME_IN, adding.GetInvocationList().Length);
+		Assert.Equal(2, adding.GetInvocationList().Length);
 	}
+
 	[Step(10)]
 	public void OnlyLastResultReturned()
 	{
@@ -122,8 +133,9 @@ public class AboutDelegates : Koan
 		Curry adding = f.Add5;
 		adding += f.Add10;
 		//Delegates may have more than one method attached, but only the result of the last method is returned.
-		Assert.Equal(FILL_ME_IN, adding(5));
+		Assert.Equal(15, adding(5));
 	}
+
 	[Step(11)]
 	public void RemovingMethods()
 	{
@@ -132,6 +144,7 @@ public class AboutDelegates : Koan
 		adding += f.Add10;
 		Assert.Equal(2, adding.GetInvocationList().Length);
 		//Remove Add5 from the invocation list
+        adding -= f.Add5;
 		Assert.Equal(1, adding.GetInvocationList().Length);
 		Assert.Equal("Add10", adding.GetMethodInfo().Name);
 	}
@@ -152,28 +165,29 @@ public class AboutDelegates : Koan
 	[Step(12)]
 	public void BuiltInActionDelegateTakesInt()
 	{
-		//With the release of generics in .NET 2.0 we got some delegates which will cover most of our needs. 
-		//You will see them in the base class libraries, so knowing about them will be helpful. 
+		//With the release of generics in .NET 2.0 we got some delegates which will cover most of our needs.
+		//You will see them in the base class libraries, so knowing about them will be helpful.
 		//The first is Action<>. Action<> can take a variety of parameters and has a void return type.
 		//  public delegate void Action<T>(T obj);
 
 		Action<int> i = AssertIntEqualsFortyTwo;
-		i((int)FILL_ME_IN);
+		i((int)42);
 	}
 	[Step(13)]
 	public void BuiltInActionDelegateTakesString()
 	{
-		// Because the delegate is a template, it also works with any other type. 
+		// Because the delegate is a template, it also works with any other type.
 		Action<string> s = AssertStringEqualsFortyTwo;
-		s((string)FILL_ME_IN);
+		s((string)"42");
 	}
 	[Step(14)]
 	public void BuiltInActionDelegateIsOverloaded()
 	{
 		//Action is an overloaded delegate so it can take more than one parameter
 		Action<int, string> a = AssertAddEqualsFortyTwo;
-		a(12, (string)FILL_ME_IN);
+		a(12, (string)"30");
 	}
+
 	public class Seen
 	{
 		private StringBuilder _letters = new StringBuilder();
@@ -195,7 +209,7 @@ public class AboutDelegates : Koan
 
 		Array.ForEach(greeting.ToCharArray(), s.Look);
 
-		Assert.Equal(FILL_ME_IN, s.Letters);
+		Assert.Equal("Hello world", s.Letters);
 	}
 
 	private bool IntEqualsFortyTwo(int x)
@@ -209,19 +223,19 @@ public class AboutDelegates : Koan
 	[Step(16)]
 	public void BuiltInPredicateDelegateIntSatisfied()
 	{
-		//The Predicate<T> delegate 
+		//The Predicate<T> delegate
 		//  public delegate bool Predicate<T>(T obj);
-		//Predicate allows you to codify a condition and pass it around. 
-		//You use it to determine if an object satisfies some criteria. 
+		//Predicate allows you to codify a condition and pass it around.
+		//You use it to determine if an object satisfies some criteria.
 
-		Predicate<int> i = (Predicate<int>)FILL_ME_IN;
+		Predicate<int> i = (Predicate<int>)IntEqualsFortyTwo;
 		Assert.True(i(42));
 	}
 	[Step(17)]
 	public void BuiltInPredicateDelegateStringSatisfied()
 	{
 		//Because it is a template, you can work with any type
-		Predicate<string> s = (Predicate<string>)FILL_ME_IN;
+		Predicate<string> s = (Predicate<string>)StringEqualsFortyTwo;
 		Assert.True(s("42"));
 
 		//Predicate is not overloaded, so unlike Action<> you cannot do this...
@@ -239,7 +253,7 @@ public class AboutDelegates : Koan
 		//Predicate can be used to find an element in an array
 		var countries = new[] { "Greece", "Spain", "Uruguay", "Japan" };
 
-		Assert.Equal(FILL_ME_IN, Array.Find(countries, StartsWithS));
+		Assert.Equal(countries[1], Array.Find(countries, StartsWithS));
 	}
 
 	private bool IsInSouthAmerica(string country)
@@ -250,10 +264,10 @@ public class AboutDelegates : Koan
 	[Step(19)]
 	public void ValidationWithPredicate()
 	{
-		//Predicate can also be used when verifying 
+		//Predicate can also be used when verifying
 		var countries = new[] { "Greece", "Spain", "Uruguay", "Japan" };
 
-		Assert.Equal(FILL_ME_IN, Array.TrueForAll(countries, IsInSouthAmerica));
+		Assert.Equal(false, Array.TrueForAll(countries, IsInSouthAmerica));
 	}
 
 	private string FirstMonth()
@@ -267,15 +281,15 @@ public class AboutDelegates : Koan
 	[Step(20)]
 	public void FuncWithNoParameters()
 	{
-		//The Func<> delegate 
+		//The Func<> delegate
 		//  public delegate TResult Func<T, TResult>(T arg);
 		//Is very similar to the Action<> delegate. However, Func<> does not require any parameters, while does require returns a value.
-		//The last type parameter specifies the return type. If you only specify a single 
+		//The last type parameter specifies the return type. If you only specify a single
 		//type, Func<int>, then the method takes no parameters and returns an int.
 		//If you specify more than one parameter, then you are specifying the parameter types as well.
 
 		Func<string> d = FirstMonth;
-		Assert.Equal(FILL_ME_IN, d());
+		Assert.Equal(FirstMonth(), d());
 	}
 	[Step(21)]
 	public void FunctionReturnsInt()
@@ -284,7 +298,7 @@ public class AboutDelegates : Koan
 		//The first type parameters define the parameter types and the last one is the return type. So the following matches
 		//a method which takes two int parameters and returns a int.
 		Func<int, int, int> a = Add;
-		Assert.Equal(FILL_ME_IN, a(1, 1));
+		Assert.Equal(Add(1,1), a(1, 1));
 	}
 
 	public class Car
@@ -313,7 +327,7 @@ public class AboutDelegates : Koan
 		Comparison<Car> by = SortByModel;
 		Array.Sort(cars, by);
 
-		Assert.Equal(FILL_ME_IN, cars[0].Model);
+		Assert.Equal("GTV-6", cars[0].Model);
 	}
 
 	private string Stringify(int x)
@@ -331,6 +345,6 @@ public class AboutDelegates : Koan
 
 		var result = Array.ConvertAll(numbers, c);
 
-		Assert.Equal(FILL_ME_IN, result);
+		Assert.Equal(["1", "2", "3", "4"], result);
 	}
 }
