@@ -9,11 +9,11 @@ public class AboutLambdas : Koan
 	[Step(1)]
 	public void UsingAnonymousMethods()
 	{
-		//The AboutDelegates Koans introduced you to delegates. In all of those koans, 
-		//the delegate was assigned to a predefined method. 
+		//The AboutDelegates Koans introduced you to delegates. In all of those koans,
+		//the delegate was assigned to a predefined method.
 		//Anonymous methods let you define the method in place.
-		//This Koan produces the same result as AboutDelegates.ChangingTypesWithConverter, but it uses 
-		//an anonymous method instead. As you can see there is no method name, but it is 
+		//This Koan produces the same result as AboutDelegates.ChangingTypesWithConverter, but it uses
+		//an anonymous method instead. As you can see there is no method name, but it is
 		//prefixed with "delegate"
 		var numbers = new[] { 1, 2, 3, 4 };
 		var result = Array.ConvertAll(numbers, delegate (int x)
@@ -21,20 +21,22 @@ public class AboutLambdas : Koan
 			return x.ToString();
 		});
 
-		Assert.Equal(FILL_ME_IN, result);
+		Assert.Equal(["1", "2", "3", "4"], result);
 	}
+
 	[Step(2)]
 	public void AnonymousMethodsCanAccessOuterVariables()
 	{
 		//Anonymous methods can access variable defined in the scope of the method where they are defined.
-		//In C# this is called accessing an Outer Variable. In other languages it is called closure. 
+		//In C# this is called accessing an Outer Variable. In other languages it is called closure.
 		var numbers = new[] { 4, 5, 6, 7, 8, 9 };
 		int toFind = 7;
-		Assert.Equal(FILL_ME_IN, Array.FindIndex(numbers, delegate (int x)
+		Assert.Equal(3, Array.FindIndex(numbers, delegate (int x)
 		{
 			return x == toFind;
 		}));
 	}
+
 	[Step(3)]
 	public void AccessEvenAfterVariableIsOutOfScope()
 	{
@@ -49,7 +51,7 @@ public class AboutLambdas : Koan
 		}
 		var numbers = new[] { 4, 5, 6, 7, 8, 9 };
 		//toFind is not available here, yet criteria still works
-		Assert.Equal(FILL_ME_IN, Array.FindIndex(numbers, criteria));
+		Assert.Equal(3, Array.FindIndex(numbers, criteria));
 	}
 
 	[Step(4)]
@@ -61,7 +63,7 @@ public class AboutLambdas : Koan
 			return x.ToString();
 		});
 		//Lambda expressions are really nothing more than a short hand way of writing anonymous methods
-		//The following is the same work done using a Lambda expression. 
+		//The following is the same work done using a Lambda expression.
 		//The delegate key word is replaced with => on the other side of the parameters
 		//        |                               |
 		//        |                               |-----|
@@ -71,15 +73,16 @@ public class AboutLambdas : Koan
 		{
 			return x.ToString();
 		});
-		Assert.Equal(FILL_ME_IN, anonymous);
-		//The => pair is spoken as "going into". If you were talking about this 
+		Assert.Equal(["1", "2", "3", "4"], anonymous);
+		//The => pair is spoken as "going into". If you were talking about this
 		//code with a peer, you would say "x going into..."
 	}
+
 	[Step(5)]
 	public void TypeCanBeInferred()
 	{
-		//Fortunately the above form of a Lambda is the most verbose form. 
-		//Most of the time you can take many of the pieces out. 
+		//Fortunately the above form of a Lambda is the most verbose form.
+		//Most of the time you can take many of the pieces out.
 		//The next few Koans will step you through the optional pieces.
 		var numbers = new[] { 1, 2, 3, 4 };
 		var anonymous = Array.ConvertAll(numbers, delegate (int x)
@@ -91,7 +94,8 @@ public class AboutLambdas : Koan
 		{
 			return x.ToString();
 		});
-		Assert.Equal(FILL_ME_IN, anonymous);
+		Assert.Equal(["1", "2", "3", "4"], anonymous);
+		Assert.Equal(["1", "2", "3", "4"], lambda);
 	}
 
 	[Step(6)]
@@ -108,7 +112,8 @@ public class AboutLambdas : Koan
 		{
 			return x.ToString();
 		});
-		Assert.Equal(FILL_ME_IN, anonymous);
+		Assert.Equal(["1", "2", "3", "4"], anonymous);
+		Assert.Equal(["1", "2", "3", "4"], lambda);
 	}
 
 	[Step(7)]
@@ -121,6 +126,7 @@ public class AboutLambdas : Koan
 		});
 		var lambda = Array.ConvertAll(numbers, x => x.ToString());
 		//When you have only one statement, the curly brackets are not needed. What other two things are also missing?
-		Assert.Equal(FILL_ME_IN, anonymous);
+		Assert.Equal(["1", "2", "3", "4"], anonymous);
+		Assert.Equal(["1", "2", "3", "4"], lambda);
 	}
 }
