@@ -183,3 +183,5 @@ cython_debug/
 
 # ignore serverless cache files
 **/.serverless/
+**/bin/
+**/obj/
