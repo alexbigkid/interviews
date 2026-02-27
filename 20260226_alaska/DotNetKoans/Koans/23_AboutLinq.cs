@@ -61,7 +61,7 @@ public class AboutLinq : Koan
 		string[] words = { "believe", "relief", "receipt", "field" };
 
 		bool iAfterE = words.Any(w => w.Contains("ei")); //Check if any of your words contain 'ei'
-		Assert.Equal(true, iAfterE);
+		Assert.True(iAfterE);
 	}
 
 

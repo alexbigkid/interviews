@@ -11,16 +11,14 @@ public class AboutTuples : Koan
 {
 
 	#region 1: Tuple can group multiple elements together
-
-
 	// A tuple is a C# class
 	[Step(1)]
 	public void TupleIsACSharpClass()
 	{
 		var batman = new Tuple<string, string>("Bruce", "Wayne");
 
-		Assert.Equal(FILL_ME_IN, batman.Item1); // FirstName
-		Assert.Equal(FILL_ME_IN, batman.Item2); // LastName
+		Assert.Equal("Bruce", batman.Item1); // FirstName
+		Assert.Equal("Wayne", batman.Item2); // LastName
 	}
 
 	// with some syntax sugar
@@ -29,8 +27,8 @@ public class AboutTuples : Koan
 	{
 		var batman = ("Bruce", "Wayne");
 
-		Assert.Equal(FILL_ME_IN, batman.Item1); // FirstName
-		Assert.Equal(FILL_ME_IN, batman.Item2); // LastName
+		Assert.Equal("Bruce", batman.Item1); // FirstName
+		Assert.Equal("Wayne", batman.Item2); // LastName
 	}
 
 	// You can name values in the tuple
@@ -40,8 +38,8 @@ public class AboutTuples : Koan
 		var lastName = "Wayne";
 		var batman = (firstName: "Bruce", lastName);
 
-		Assert.Equal(FILL_ME_IN, batman.firstName);
-		Assert.Equal(FILL_ME_IN, batman.lastName);
+		Assert.Equal("Bruce", batman.firstName);
+		Assert.Equal("Wayne", batman.lastName);
 	}
 
 	// A tuple can be used as a function parameter
@@ -50,7 +48,7 @@ public class AboutTuples : Koan
 	{
 		var batman = (firstName: "Bruce", lastName: "Wayne");
 
-		Assert.Equal(FILL_ME_IN, GetFullName(batman));
+		Assert.Equal("Bruce Wayne", GetFullName(batman));
 	}
 
 	public string GetFullName((string firstName, string lastName) data)
@@ -65,32 +63,27 @@ public class AboutTuples : Koan
 		var enemy = new List<string>() { "Joker", "Penguin", "Riddler", "Catwoman" };
 		var batman1966 = (firstName: "Bruce", lastName: "Wayne", enemy);
 
-		Assert.Equal(typeof(FillMeIn), batman1966.firstName.GetType());
-		Assert.Equal(typeof(FillMeIn), batman1966.enemy.GetType());
-
+		Assert.Equal(typeof(string), batman1966.firstName.GetType());
+		Assert.Equal(typeof(List<string>), batman1966.enemy.GetType());
 	}
-
-
-
 	#endregion
 
 
 	#region 2: equality
-
 	// Two tuples are equal when they have the same values
 	[Step(6)]
-	public void TwoTupleAreEquaWhenHaveSameValuesInSameOrder()
+	public void TwoTupleAreEqualWhenHaveSameValuesInSameOrder()
 	{
 		var batman = (firstName: "Bruce", lastName: "Wayne");
 
 		var bruceWayne = ("Bruce", "Wayne");
-		Assert.Equal(FILL_ME_IN, batman == bruceWayne);
+		Assert.True(batman == bruceWayne);
 
 		var wayneBruce = ("Wayne", "Bruce");
-		Assert.Equal(FILL_ME_IN, batman == wayneBruce);
+		Assert.False(batman == wayneBruce);
 
 		var azrael = (firstName: "Jean-Paul", lastName: "Valley");
-		Assert.Equal(FILL_ME_IN, batman == azrael);
+		Assert.False(batman == azrael);
 	}
 
 	// Two lists in a tuple are compared by reference
@@ -98,22 +91,18 @@ public class AboutTuples : Koan
 	public void ButListStillUsedReferenceEquality()
 	{
 		var enemy1966 = new List<string>() { "Joker", "Penguin", "Riddler", "Catwoman" };
-		var batman1966 = (firstName: "Bruce", lastName: "Wayne"
-			, enemy: enemy1966);
+		var batman1966 = (firstName: "Bruce", lastName: "Wayne", enemy: enemy1966);
 
-		var aDud = (firstName: "Bruce", lastName: "Wayne"
-			, enemy: enemy1966);
-		Assert.Equal(FILL_ME_IN, batman1966 == aDud);
+		var aDud = (firstName: "Bruce", lastName: "Wayne", enemy: enemy1966);
+		Assert.True(batman1966 == aDud);
 
 		var newBatman1966 = (firstName: "Bruce", lastName: "Wayne"
 			, enemy: new List<string>() { "Joker", "Penguin", "Riddler", "Catwoman" });
-		Assert.Equal(FILL_ME_IN, batman1966 == newBatman1966); //this one is tricky
+		Assert.False(batman1966 == newBatman1966); //this one is tricky
 	}
-
 	#endregion
 
 	#region 3: Usage
-
 	// A Tuple can replace out parameter
 	[Step(8)]
 	public void TupleReplaceOutParameter()
@@ -123,13 +112,13 @@ public class AboutTuples : Koan
 		var otherEnemies = new List<string>();
 		var mainEnemy = extractMainEnemyWithOut("Joker,Penguin,Riddler,Catwoman", out otherEnemies);
 
-		Assert.Equal(FILL_ME_IN, mainEnemy);
-		Assert.Equal(FILL_ME_IN, string.Join(",", otherEnemies));
+		Assert.Equal("Joker", mainEnemy);
+		Assert.Equal("Penguin,Riddler,Catwoman", string.Join(",", otherEnemies));
 
 		var extract = extractMainEnemyWithTuple("Joker,Penguin,Riddler,Catwoman");
 
-		Assert.Equal(FILL_ME_IN, extract.mainEnemy);
-		Assert.Equal(FILL_ME_IN, string.Join(",", extract.othersEnemies));
+		Assert.Equal("Joker", extract.mainEnemy);
+		Assert.Equal("Penguin,Riddler,Catwoman", string.Join(",", extract.othersEnemies));
 
 		// What syntax do you prefer?
 	}
@@ -150,11 +139,10 @@ public class AboutTuples : Koan
 		return (mainEnemy, othersEnemies);
 	}
 
-	// Tuple with extension can replace class 
+	// Tuple with extension can replace class
 	[Step(9)]
 	public void TupleWithExtensionCanReplaceClass()
 	{
-
 		var batman1966Class = new Movie("Bruce", "Wayne");
 		batman1966Class.AddMainEnemy("Joker");
 		batman1966Class.AddAlso("Penguin");
@@ -162,7 +150,7 @@ public class AboutTuples : Koan
 		batman1966Class.AddAlso("Catwoman");
 		string titleClass = batman1966Class.GetTitle();
 
-		Assert.Equal(FILL_ME_IN, titleClass);
+		Assert.Equal("A move with Bruce Wayne against Joker, Penguin, Riddler, Catwoman", titleClass);
 
 		// You can know more on extension with koan AboutMethods
 		string titleTuple = ("Bruce", "Wayne")
@@ -172,13 +160,12 @@ public class AboutTuples : Koan
 			.AndAlso("Catwoman")
 			.GetTitle();
 
-		Assert.Equal(FILL_ME_IN, titleTuple);
-		/* 
+		Assert.Equal("A move with Bruce Wayne against Joker, Penguin, Riddler, Catwoman", titleTuple);
+		/*
 		 What's syntax do you prefer?
 		If you want to know more on tuple + extension advantages, look at : https://github.com/MostlyAdequate/mostly-adequate-guide/blob/master/ch03.md
 		*/
 	}
-
 	#endregion
 
 }

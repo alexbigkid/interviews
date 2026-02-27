@@ -31,9 +31,9 @@ public class AboutDirectory : Koan, IDisposable
 	public void CreatingAndDeletingDirectory()
 	{
 		Directory.CreateDirectory(fullPath);
-		Assert.Equal(true, Directory.Exists(fullPath));
+		Assert.True(Directory.Exists(fullPath));
 		Directory.Delete(fullPath);
-		Assert.Equal(false, Directory.Exists(fullPath));
+		Assert.False(Directory.Exists(fullPath));
 	}
 
 	[Step(2)]
@@ -42,7 +42,7 @@ public class AboutDirectory : Koan, IDisposable
 		var directoryInfo = new DirectoryInfo(fullPath);
 		directoryInfo.Create();
 
-		Assert.Equal(true, directoryInfo.Exists);
+		Assert.True(directoryInfo.Exists);
 		Assert.Equal(directoryName, directoryInfo.Name);
 
 		directoryInfo.Delete(false);

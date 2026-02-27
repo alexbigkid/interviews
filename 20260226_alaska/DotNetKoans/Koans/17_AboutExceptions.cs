@@ -74,10 +74,9 @@ public class AboutExceptions : Koan
 		catch (SystemException)
 		{
 			// You can put any logic you want in here and it will only run if the exception is thrown.
-			Console.WriteLine("Our program had an error, your karma was not saved. Sorry man");
 		}
 
-		Assert.Equal(false, KarmaIsSaved);
+		Assert.False(KarmaIsSaved);
 	}
 
 	[Step(5)]
@@ -122,7 +121,7 @@ public class AboutExceptions : Koan
 			IKnowNothingAboutExceptions = false;
 		}
 
-		Assert.Equal(false, IKnowNothingAboutExceptions);
+		Assert.False(IKnowNothingAboutExceptions);
 	}
 
 	// This is how we defined our own custom exception.

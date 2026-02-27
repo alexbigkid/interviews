@@ -164,6 +164,6 @@ public class AboutBitwiseAndShiftOperator : Koan
             b = carry << 1;
         }
 		//Here goes your implementation to set value to FILL_ME_IN
-		Assert.Equal(a, 19);
+		Assert.Equal(19, a);
 	}
 }

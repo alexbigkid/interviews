@@ -48,7 +48,7 @@ public class AboutStrings : Koan
 	{
 		var strA = @"Verbatim Strings can handle both ' and "" characters (when escaped)";
 		var strB = "Verbatim Strings can handle both ' and \" characters (when escaped)";
-		Assert.Equal(true, strA.Equals(strB));
+		Assert.Equal(strA, strB);
 	}
 
 	[Step(6)]
@@ -294,7 +294,7 @@ broken line";
 	{
 		Assert.Equal(97, 'a');
 		Assert.Equal(98, 'b');
-		Assert.Equal(true, 'b' == ('a' + 1));
+		Assert.True('b' == ('a' + 1));
 	}
 
 	[Step(30)]

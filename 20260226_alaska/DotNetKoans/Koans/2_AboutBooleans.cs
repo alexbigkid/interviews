@@ -15,21 +15,21 @@ public class AboutBooleans : Koan
 	public void TrueIsTreatedAsTrue()
 	{
 		// true is true
-		Assert.Equal(true, true);
+		Assert.True(true);
 	}
 
 	[Step(2)]
 	public void FalseIsTreatedAsFalse()
 	{
 		// false is false
-		Assert.Equal(false, false);
+		Assert.False(false);
 	}
 
 	[Step(3)]
 	public void TrueIsNotFalse()
 	{
 		// true is not false
-		Assert.NotEqual(true, false);
+		Assert.False(false);
 	}
 
 	[Step(4)]

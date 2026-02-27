@@ -19,7 +19,7 @@ public class AboutFloats : Koan
 	{
 		float f = 1.5f;
 
-		Assert.Equal(f, 1.5);
+		Assert.Equal(1.5, f);
 
 		//Floating Point numbers are able to keep data beyond the decimal point
 		//unlike Integers which are whole numbers.
@@ -72,8 +72,8 @@ public class AboutFloats : Koan
 		var sevenDigits = 0.9999999f;
 		var eightDigits = 0.99999999f;
 
-		Assert.Equal(sevenDigits, 0.9999999f);
-		Assert.Equal(eightDigits, 1f);
+		Assert.Equal(0.9999999f, sevenDigits);
+		Assert.Equal(1f, eightDigits);
 
 		//Remember how floats are "Single Precision"?
 		//What does that actually mean?

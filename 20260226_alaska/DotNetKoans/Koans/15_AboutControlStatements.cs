@@ -20,7 +20,7 @@ public class AboutControlStatements : Koan
 			b = false;
 		}
 
-		Assert.Equal(true, b);
+		Assert.True(b);
 	}
 
 	[Step(2)]
@@ -32,7 +32,7 @@ public class AboutControlStatements : Koan
 		else
 			b = false;
 
-		Assert.Equal(true, b);
+		Assert.True(b);
 
 	}
 
@@ -45,7 +45,7 @@ public class AboutControlStatements : Koan
 			b = true;
 		}
 
-		Assert.Equal(true, b);
+		Assert.True(b);
 	}
 
 	[Step(4)]
@@ -55,7 +55,7 @@ public class AboutControlStatements : Koan
 		if (true)
 			b = true;
 
-		Assert.Equal(true, b);
+		Assert.True(b);
 	}
 
 	[Step(5)]
@@ -70,8 +70,8 @@ public class AboutControlStatements : Koan
 			b1 = true;
 		b2 = true;
 
-		Assert.Equal(false, b1);
-		Assert.Equal(true, b2);
+		Assert.False(b1);
+		Assert.True(b2);
 	}
 
 	[Step(6)]
@@ -89,7 +89,7 @@ public class AboutControlStatements : Koan
 		//i = null; //You can't do this
 
 		int? nullableInt = null; //but you can do this
-		Assert.NotNull(i);
+		Assert.Equal(0, i);
 		Assert.Null(nullableInt);
 	}
 
@@ -121,9 +121,9 @@ public class AboutControlStatements : Koan
 		if (myType is AboutMethods)
 			isAboutMethods = true;
 
-		Assert.Equal(true, isKoan);
-		Assert.Equal(true, isAboutControlStatements);
-		Assert.Equal(false, isAboutMethods);
+		Assert.True(isKoan);
+		Assert.True(isAboutControlStatements);
+		Assert.False(isAboutMethods);
 
 	}
 

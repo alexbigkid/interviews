@@ -35,7 +35,7 @@ public class AboutDisposable : Koan
 		// get file contents in readable format
 		var result = reader.ReadToEnd();
 
-		Assert.Equal(result, FILL_ME_IN);
+		Assert.Equal(FILE, result);
 	}
 
 	[Step(2)]
@@ -66,6 +66,6 @@ public class AboutDisposable : Koan
 			reader.Dispose();
 		}
 
-		Assert.Equal(result, FILL_ME_IN);
+		Assert.Equal(FILE, result);
 	}
 }

@@ -33,9 +33,9 @@ public class AboutFile : Koan, IDisposable
 	public void CreatingAndDeletingFile()
 	{
 		string path = TrackFile(IOPath.GetTempFileName()); // GetTempFileName() Creates a uniquely named, zero-byte temporary file on disk and returns the full path of that file.
-		Assert.Equal(true, File.Exists(path));
+		Assert.True(File.Exists(path));
 		File.Delete(path);
-		Assert.Equal(false, File.Exists(path));
+		Assert.False(File.Exists(path));
 	}
 
 	[Step(2)]
@@ -47,8 +47,8 @@ public class AboutFile : Koan, IDisposable
 		File.Delete(newPath);
 		File.Copy(path, newPath);
 
-		Assert.Equal(true, File.Exists(path));
-		Assert.Equal(true, File.Exists(newPath));
+		Assert.True(File.Exists(path));
+		Assert.True(File.Exists(newPath));
 	}
 
 	[Step(3)]
@@ -60,8 +60,8 @@ public class AboutFile : Koan, IDisposable
 		File.Delete(newPath);
 		File.Move(path, newPath);
 
-		Assert.Equal(false, File.Exists(path));
-		Assert.Equal(true, File.Exists(newPath));
+		Assert.False(File.Exists(path));
+		Assert.True(File.Exists(newPath));
 	}
 
 	[Step(4)]
@@ -71,7 +71,7 @@ public class AboutFile : Koan, IDisposable
 		string path = TrackFile(IOPath.GetTempFileName());
 		FileInfo fileInfo = new FileInfo(path);
 
-		Assert.Equal(true, fileInfo.Exists);
+		Assert.True(fileInfo.Exists);
 		Assert.Equal(path, fileInfo.FullName); // what is the file name?
 	}
 
